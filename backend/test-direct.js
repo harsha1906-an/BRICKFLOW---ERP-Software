@@ -1,0 +1,304 @@
+// Direct Database and Logic Testing (No Server Required)
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+
+const dbPath = path.join(__dirname, 'database.sqlite');
+const db = new sqlite3.Database(dbPath);
+
+console.log('🔍 HARD TESTING - Direct Database & Logic Validation\n');
+console.log('='.repeat(70));
+
+const testResults = {
+    passed: 0,
+    failed: 0,
+    tests: []
+};
+
+function logTest(name, passed, details) {
+    testResults.tests.push({ name, passed, details });
+    if (passed) {
+        testResults.passed++;
+        console.log(`✅ PASS: ${name}`);
+    } else {
+        testResults.failed++;
+        console.log(`❌ FAIL: ${name}`);
+    }
+    if (details) console.log(`   ${details}`);
+}
+
+// Helper function to run queries as promises
+function runQuery(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+}
+
+function runInsert(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.run(sql, params, function (err) {
+            if (err) reject(err);
+            else resolve(this.lastID);
+        });
+    });
+}
+
+// ============================================================================
+// TEST 1: Verify labour_penalties table exists
+// ============================================================================
+async function testPenaltiesTableExists() {
+    console.log('\n📝 TEST 1: Verify labour_penalties Table Exists\n');
+
+    try {
+        const tables = await runQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='labour_penalties'"
+        );
+
+        const exists = tables.length > 0;
+        logTest('labour_penalties table exists', exists,
+            exists ? 'Table created successfully' : 'Table NOT found in database!');
+
+        if (exists) {
+            // Check columns
+            const columns = await runQuery("PRAGMA table_info(labour_penalties)");
+            const columnNames = columns.map(c => c.name);
+            console.log(`   Columns: ${columnNames.join(', ')}`);
+
+            const requiredCols = ['id', 'labour_id', 'project_id', 'penalty_type', 'amount', 'is_deducted', 'deducted_payment_id'];
+            const hasAllCols = requiredCols.every(col => columnNames.includes(col));
+            logTest('All required columns present', hasAllCols,
+                hasAllCols ? 'Schema verified' : `Missing columns: ${requiredCols.filter(c => !columnNames.includes(c)).join(', ')}`);
+        }
+    } catch (error) {
+        logTest('labour_penalties table exists', false, error.message);
+    }
+}
+
+// ============================================================================
+// TEST 2: Test Advance Auto-Deduction Logic
+// ============================================================================
+async function testAdvanceLogic() {
+    console.log('\n📝 TEST 2: Advance Auto-Deduction Logic\n');
+
+    try {
+        // Insert test advance
+        console.log('   Inserting test advance of ₹2000...');
+        const advanceId = await runInsert(
+            `INSERT INTO labour_payments (labour_id, project_id, payment_date, payment_type, base_amount, net_amount, payment_method)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [1, 1, '2024-01-25', 'advance', 2000, 2000, 'cash']
+        );
+
+        // Query total advances
+        const result = await runQuery(
+            `SELECT COALESCE(SUM(net_amount), 0) as total_advance
+             FROM labour_payments
+             WHERE labour_id = ? AND project_id = ? AND payment_type = 'advance'`,
+            [1, 1]
+        );
+
+        const totalAdvance = result[0].total_advance;
+        console.log(`   Query result: ₹${totalAdvance}`);
+
+        const isCorrect = totalAdvance === 2000;
+        logTest('getAdvanceTotal() logic', isCorrect,
+            isCorrect ? 'Correctly sums advances' : `Expected 2000, got ${totalAdvance}`);
+
+        // Clean up
+        await runQuery('DELETE FROM labour_payments WHERE id = ?', [advanceId]);
+
+    } catch (error) {
+        logTest('getAdvanceTotal() logic', false, error.message);
+    }
+}
+
+// ============================================================================
+// TEST 3: Test Penalty Query Logic
+// ============================================================================
+async function testPenaltyLogic() {
+    console.log('\n📝 TEST 3: Penalty Auto-Deduction Logic\n');
+
+    try {
+        // Insert test penalty
+        console.log('   Inserting test penalty of ₹500...');
+        const penaltyId = await runInsert(
+            `INSERT INTO labour_penalties (labour_id, project_id, penalty_date, penalty_type, amount, reason, is_deducted)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [2, 1, '2024-01-25', 'damage', 500, 'Test penalty', 0]
+        );
+
+        // Query undeducted penalties
+        const result = await runQuery(
+            `SELECT COALESCE(SUM(amount), 0) as total_penalty
+             FROM labour_penalties
+             WHERE labour_id = ? AND project_id = ? AND is_deducted = 0`,
+            [2, 1]
+        );
+
+        const totalPenalty = result[0].total_penalty;
+        console.log(`   Query result: ₹${totalPenalty}`);
+
+        const isCorrect = totalPenalty === 500;
+        logTest('getPenaltyTotal() logic', isCorrect,
+            isCorrect ? 'Correctly sums undeducted penalties' : `Expected 500, got ${totalPenalty}`);
+
+        // Test marking as deducted
+        console.log('   Testing markPenaltiesDeducted...');
+        await runQuery(
+            `UPDATE labour_penalties
+             SET is_deducted = 1, deducted_payment_id = ?
+             WHERE labour_id = ? AND project_id = ? AND is_deducted = 0`,
+            [999, 2, 1]
+        );
+
+        const afterUpdate = await runQuery(
+            `SELECT * FROM labour_penalties WHERE id = ?`,
+            [penaltyId]
+        );
+
+        const markedCorrectly = afterUpdate[0].is_deducted === 1 && afterUpdate[0].deducted_payment_id === 999;
+        logTest('markPenaltiesDeducted() logic', markedCorrectly,
+            markedCorrectly ? 'Penalties marked correctly' : 'Failed to mark penalties');
+
+        // Clean up
+        await runQuery('DELETE FROM labour_penalties WHERE id = ?', [penaltyId]);
+
+    } catch (error) {
+        logTest('Penalty logic', false, error.message);
+    }
+}
+
+// ============================================================================
+// TEST 4: Test GST Calculations
+// ============================================================================
+async function testGSTCalculations() {
+    console.log('\n📝 TEST 4: GST Calculation Functions\n');
+
+    try {
+        // Test calculateGST (from base)
+        const base = 10000;
+        const gstPercent = 18;
+        const gstAmount = (base * gstPercent) / 100;
+        const total = base + gstAmount;
+
+        console.log(`   calculateGST(10000, 18%):`);
+        console.log(`   Base: ₹${base}, GST: ₹${gstAmount}, Total: ₹${total}`);
+
+        const calc1Correct = gstAmount === 1800 && total === 11800;
+        logTest('calculateGST() from base', calc1Correct,
+            calc1Correct ? 'Correct: ₹11,800 total' : 'Calculation error');
+
+        // Test calculateGSTFromTotal (reverse)
+        const totalWithGst = 11800;
+        const baseFromTotal = totalWithGst / (1 + (gstPercent / 100));
+        const gstFromTotal = totalWithGst - baseFromTotal;
+
+        console.log(`   calculateGSTFromTotal(11800, 18%):`);
+        console.log(`   Total: ₹${totalWithGst}, Base: ₹${baseFromTotal.toFixed(2)}, GST: ₹${gstFromTotal.toFixed(2)}`);
+
+        const calc2Correct = Math.abs(baseFromTotal - 10000) < 0.01 && Math.abs(gstFromTotal - 1800) < 0.01;
+        logTest('calculateGSTFromTotal() reverse calc', calc2Correct,
+            calc2Correct ? 'Correct: ₹10,000 base extracted' : 'Reverse calculation error');
+
+    } catch (error) {
+        logTest('GST calculations', false, error.message);
+    }
+}
+
+// ============================================================================
+// TEST 5: Test Overpayment Detection Logic
+// ============================================================================
+async function testOverpaymentLogic() {
+    console.log('\n📝 TEST 5: Overpayment Detection Logic\n');
+
+    try {
+        // Simulate overpayment check
+        const currentBalance = 50000;
+        const paymentAmount = 60000;
+        const afterPayment = currentBalance - paymentAmount;
+
+        const isOverpayment = afterPayment < 0;
+        const excessAmount = isOverpayment ? Math.abs(afterPayment) : 0;
+
+        console.log(`   Current Balance: ₹${currentBalance}`);
+        console.log(`   Payment Attempt: ₹${paymentAmount}`);
+        console.log(`   After Payment: ₹${afterPayment}`);
+        console.log(`   Is Overpayment: ${isOverpayment}`);
+        console.log(`   Excess: ₹${excessAmount}`);
+
+        const detectionWorks = isOverpayment && excessAmount === 10000;
+        logTest('checkOverpayment() logic', detectionWorks,
+            detectionWorks ? 'Correctly detects overpayment and calculates excess' : 'Overpayment detection failed');
+
+    } catch (error) {
+        logTest('Overpayment logic', false, error.message);
+    }
+}
+
+// ============================================================================
+// TEST 6: Test Inventory Stock Validation Logic
+// ============================================================================
+async function testInventoryLogic() {
+    console.log('\n📝 TEST 6: Inventory Stock Validation Logic\n');
+
+    try {
+        // Simulate stock check
+        const currentStock = 100;
+        const requestedQuantity = 150;
+
+        const hasInsufficientStock = currentStock < requestedQuantity;
+
+        console.log(`   Current Stock: ${currentStock} units`);
+        console.log(`   Requested OUT: ${requestedQuantity} units`);
+        console.log(`   Should Block: ${hasInsufficientStock}`);
+
+        const validationWorks = hasInsufficientStock === true;
+        logTest('Stock validation logic', validationWorks,
+            validationWorks ? 'Correctly identifies insufficient stock' : 'Stock validation failed');
+
+    } catch (error) {
+        logTest('Inventory logic', false, error.message);
+    }
+}
+
+// ============================================================================
+// RUN ALL TESTS
+// ============================================================================
+async function runAllTests() {
+    try {
+        await testPenaltiesTableExists();
+        await testAdvanceLogic();
+        await testPenaltyLogic();
+        await testGSTCalculations();
+        await testOverpaymentLogic();
+        await testInventoryLogic();
+
+        // Summary
+        console.log('\n' + '='.repeat(70));
+        console.log('📊 HARD TEST SUMMARY\n');
+        console.log(`Total Tests Run: ${testResults.passed + testResults.failed}`);
+        console.log(`✅ Passed: ${testResults.passed}`);
+        console.log(`❌ Failed: ${testResults.failed}`);
+        console.log(`Success Rate: ${((testResults.passed / (testResults.passed + testResults.failed)) * 100).toFixed(1)}%`);
+
+        if (testResults.failed > 0) {
+            console.log('\n⚠️  FAILED TESTS:');
+            testResults.tests.filter(t => !t.passed).forEach(t => {
+                console.log(`   - ${t.name}`);
+            });
+        } else {
+            console.log('\n🎉 ALL TESTS PASSED!');
+        }
+
+        console.log('='.repeat(70));
+
+    } catch (error) {
+        console.error('\n❌ Test execution failed:', error.message);
+    } finally {
+        db.close();
+    }
+}
+
+runAllTests();

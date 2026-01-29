@@ -1,0 +1,170 @@
+/* Enforce Dark Theme for Login Page */
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    background-color: #0f172a !important;
+    /* Force Dark Blue Background */
+    position: fixed;
+    /* Ensure full coverage */
+    top: 0;
+    left: 0;
+}
+
+.login-card {
+    background-color: #1e293b !important;
+    /* Dark Slate */
+    padding: 48px 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid #334155;
+    z-index: 10;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.login-logo {
+    height: 180px;
+    margin-bottom: 16px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.1));
+}
+
+.login-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #f8fafc !important;
+    /* Pure White */
+    margin: 0 0 8px 0;
+    letter-spacing: -0.5px;
+}
+
+.login-subtitle {
+    font-size: 14px;
+    color: #cbd5e1 !important;
+    /* Lighter Slate for better visibility */
+    margin: 0;
+    font-weight: 400;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.error-message {
+    padding: 12px;
+    margin-bottom: 16px;
+    background-color: #450a0a !important;
+    /* Deep Red */
+    color: #fca5a5 !important;
+    /* Light Red */
+    border: 1px solid #7f1d1d;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+/* High Specificity for Labels */
+.login-card .form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #e2e8f0 !important;
+    /* Light Slate - High Contrast */
+    margin-bottom: 8px;
+}
+
+/* High Specificity for Inputs */
+.login-card .form-group .form-input {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 14px;
+    background-color: #0f172a !important;
+    /* Darkest Blue */
+    border: 1px solid #475569 !important;
+    border-radius: 6px;
+    outline: none;
+    color: #ffffff !important;
+    /* Pure White Text */
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.login-card .form-group .form-input:focus {
+    border-color: #3b82f6 !important;
+    /* Bright Blue */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.login-card .form-group .form-input::placeholder {
+    color: #64748b !important;
+}
+
+.login-button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff !important;
+    background-color: #3b82f6 !important;
+    /* Primary Blue */
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 8px;
+}
+
+.login-button:hover:not(:disabled) {
+    background-color: #2563eb !important;
+}
+
+.login-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background-color: #475569 !important;
+}
+
+.demo-credentials {
+    margin-top: 24px;
+    padding: 12px;
+    background-color: #0f172a !important;
+    border-radius: 6px;
+    border: 1px dashed #475569;
+    text-align: center;
+}
+
+.demo-credentials p {
+    margin: 4px 0;
+    font-size: 13px;
+    color: #94a3b8 !important;
+}
+
+.demo-credentials strong {
+    color: #e2e8f0 !important;
+}
+
+/* Mobile Responsiveness for Login */
+@media (max-width: 480px) {
+    .login-card {
+        padding: 32px 24px;
+        max-width: 90%;
+    }
+
+    .login-title {
+        font-size: 28px;
+    }
+}

@@ -1,0 +1,165 @@
+:root {
+  /* Colors - Pitch Black & Liquid Glass Theme */
+  --bg-primary: #000000;
+  /* Pure Black */
+  --bg-secondary: #0a0a0a;
+  /* Near Black */
+  --bg-tertiary: #111111;
+  /* Dark Grey */
+
+  --text-primary: #ffffff;
+  /* Pure White */
+  --text-secondary: #a1a1aa;
+  /* Zinc-400 */
+  --text-muted: #71717a;
+  /* Zinc-500 */
+
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-focus: #3b82f6;
+
+  --primary-color: #3b82f6;
+  --primary-hover: #2563eb;
+
+  --success-bg: #064e3b;
+  --success-text: #6ee7b7;
+
+  --warning-bg: #451a03;
+  --warning-text: #fdba74;
+
+  --danger-bg: #450a0a;
+  --danger-text: #fca5a5;
+
+  /* Component Specific */
+  --card-bg: rgba(255, 255, 255, 0.03);
+  --input-bg: #050505;
+  --table-header-bg: #0a0a0a;
+  --table-border: rgba(255, 255, 255, 0.05);
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 1);
+
+  /* Liquid Glass Effect */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(12px) saturate(160%);
+}
+
+.liquid-glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.82);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-glass:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+}
+
+/* Global inputs to ensure dark compliance */
+input,
+select,
+textarea {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+/* Global tables */
+table {
+  border-collapse: collapse;
+}
+
+th {
+  background-color: var(--table-header-bg);
+  color: var(--text-primary);
+}
+
+td {
+  border-bottom: 1px solid var(--table-border);
+}
+
+/* Global scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Responsive Globals */
+@media (max-width: 768px) {
+
+  /* Scrollable tables */
+  div[class*="table-container"],
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  table {
+    min-width: 600px;
+    /* Force scroll */
+  }
+
+  /* Stack grids */
+  .dashboard-grid,
+  .summary-cards,
+  .stats-grid,
+  .analytics-grid,
+  .form-row,
+  .filter-row {
+    grid-template-columns: 1fr !important;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Adjust modal width */
+  .modal-content,
+  .modal {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 10px auto;
+    max-height: 90vh;
+  }
+
+  /* Adjust inputs */
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px;
+    /* Prevent zoom on iOS */
+  }
+}

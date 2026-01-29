@@ -1,0 +1,150 @@
+.audit-logs-page {
+    padding: 20px;
+}
+
+.filters-section {
+    background: var(--bg-secondary);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.filter-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+}
+
+.filter-group label {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: var(--text-secondary);
+}
+
+.filter-group select,
+.filter-group input {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    outline: none;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.logs-table {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.action-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-green {
+    background: rgba(21, 87, 36, 0.2);
+    color: var(--success-text);
+}
+
+.badge-blue {
+    background: rgba(25, 118, 210, 0.2);
+    color: #90caf9;
+}
+
+.badge-red {
+    background: var(--danger-bg);
+    color: var(--danger-text);
+}
+
+.badge-purple {
+    background: rgba(123, 31, 162, 0.2);
+    color: #ce93d8;
+}
+
+.badge-gray {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.expanded-row {
+    background: var(--bg-tertiary);
+}
+
+.log-details {
+    padding: 20px;
+}
+
+.details-header {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.json-diff {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.diff-section h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.diff-section pre {
+    background: var(--bg-primary);
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.no-data,
+.error-data {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.error-data {
+    color: var(--danger-text);
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    font-size: 16px;
+    color: var(--text-secondary);
+}

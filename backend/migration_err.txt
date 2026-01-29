@@ -1,0 +1,1 @@
+Error: SQLITE_ERROR: no such table: labour_attendance_old{"errno":1,"code":"SQLITE_ERROR","__augmented":true}

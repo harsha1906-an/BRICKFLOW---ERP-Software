@@ -1,0 +1,5 @@
+Error: SQLITE_CONSTRAINT: CHECK constraint failed: payment_type IN ('daily', 'stage', 'advance', 'bonus'){
+  "errno": 19,
+  "code": "SQLITE_CONSTRAINT",
+  "__augmented": true
+}

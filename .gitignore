@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Database & Backups
+*.db
+*.sqlite
+*.db-journal
+backups/
+**/backups/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Freeze Snapshots (Local only)
+v1.0.0_Frozen_Snapshot/
+
+# AI Artifacts
+.gemini/
+brain/
+**/brain/
+task.md
+implementation_plan*.md
+walkthrough.md
+

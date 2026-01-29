@@ -1,0 +1,65 @@
+.payment-requests-page {
+    padding: 20px;
+}
+
+.filters {
+    background: var(--bg-tertiary);
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.filters label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.filters select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    outline: none;
+}
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-yellow {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.badge-green {
+    background: rgba(21, 87, 36, 0.2);
+    color: var(--success-text);
+}
+
+.badge-red {
+    background: var(--danger-bg);
+    color: var(--danger-text);
+}
+
+.badge-gray {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.no-data {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+    font-style: italic;
+}

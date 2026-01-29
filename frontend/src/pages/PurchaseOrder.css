@@ -1,0 +1,78 @@
+.po-page {
+    padding: 20px;
+}
+
+.po-modal {
+    width: 700px !important;
+    max-width: 90%;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-draft {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.badge-yellow {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.badge-green {
+    background: rgba(21, 87, 36, 0.2);
+    color: var(--success-text);
+}
+
+.badge-red {
+    background: var(--danger-bg);
+    color: var(--danger-text);
+}
+
+.badge-blue {
+    background: rgba(25, 118, 210, 0.2);
+    color: #90caf9;
+}
+
+.badge-purple {
+    background: rgba(123, 31, 162, 0.2);
+    color: #ce93d8;
+}
+
+/* Adjusted */
+
+.item-entry-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.item-entry-row select {
+    flex: 1;
+}
+
+.items-table {
+    width: 100%;
+    margin-top: 10px;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.items-table th,
+.items-table td {
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    text-align: left;
+    color: var(--text-primary);
+}
+
+.items-table th {
+    background: var(--table-header-bg);
+}

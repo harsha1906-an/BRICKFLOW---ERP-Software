@@ -1,0 +1,182 @@
+{
+  "timestamp": "2026-01-28T21:24:33.195Z",
+  "summary": {
+    "total_checks": 23,
+    "passed": 14,
+    "failed": 0,
+    "critical": 0,
+    "errors": 0,
+    "warnings": 2
+  },
+  "risk_level": "LOW",
+  "verdict": "SAFE FOR INTERNAL PRODUCTION",
+  "detailed_results": [
+    {
+      "phase": "PHASE 1",
+      "status": "PASS",
+      "message": "All routes are GET-only",
+      "timestamp": "2026-01-28T21:24:33.124Z"
+    },
+    {
+      "phase": "PHASE 1",
+      "status": "PASS",
+      "message": "No mutation queries detected in model",
+      "timestamp": "2026-01-28T21:24:33.128Z"
+    },
+    {
+      "phase": "PHASE 1",
+      "status": "PASS",
+      "message": "Read-only safety verified",
+      "timestamp": "2026-01-28T21:24:33.128Z"
+    },
+    {
+      "phase": "PHASE 2",
+      "status": "PASS",
+      "message": "No forbidden cached columns in materials table",
+      "timestamp": "2026-01-28T21:24:33.142Z"
+    },
+    {
+      "phase": "PHASE 2",
+      "status": "INFO",
+      "message": "payments: 7 records",
+      "timestamp": "2026-01-28T21:24:33.144Z"
+    },
+    {
+      "phase": "PHASE 2",
+      "status": "INFO",
+      "message": "expenses: 6 records",
+      "timestamp": "2026-01-28T21:24:33.147Z"
+    },
+    {
+      "phase": "PHASE 2",
+      "status": "INFO",
+      "message": "labour_payments: 6 records",
+      "timestamp": "2026-01-28T21:24:33.151Z"
+    },
+    {
+      "phase": "PHASE 2",
+      "status": "INFO",
+      "message": "inventory_transactions: 55 records",
+      "timestamp": "2026-01-28T21:24:33.155Z"
+    },
+    {
+      "phase": "PHASE 2",
+      "status": "INFO",
+      "message": "bookings: 6 records",
+      "timestamp": "2026-01-28T21:24:33.158Z"
+    },
+    {
+      "phase": "PHASE 2",
+      "status": "INFO",
+      "message": "units: 7 records",
+      "timestamp": "2026-01-28T21:24:33.160Z"
+    },
+    {
+      "phase": "PHASE 2",
+      "status": "PASS",
+      "message": "All required data sources exist",
+      "timestamp": "2026-01-28T21:24:33.162Z"
+    },
+    {
+      "phase": "PHASE 3",
+      "status": "PASS",
+      "message": "GST correctly applied only to accountable income",
+      "timestamp": "2026-01-28T21:24:33.166Z"
+    },
+    {
+      "phase": "PHASE 3",
+      "status": "PASS",
+      "message": "Profit calculation logical",
+      "timestamp": "2026-01-28T21:24:33.170Z",
+      "details": {
+        "income": 4500300,
+        "expenses": 208000,
+        "labour": 2950,
+        "profit": 4289350
+      }
+    },
+    {
+      "phase": "PHASE 3",
+      "status": "PASS",
+      "message": "Labour cost uses GROSS wages (not net)",
+      "timestamp": "2026-01-28T21:24:33.174Z"
+    },
+    {
+      "phase": "PHASE 3",
+      "status": "PASS",
+      "message": "Financial analytics verified",
+      "timestamp": "2026-01-28T21:24:33.175Z"
+    },
+    {
+      "phase": "PHASE 4",
+      "status": "WARNING",
+      "message": "unit_progress table not found - skipping progress analytics",
+      "timestamp": "2026-01-28T21:24:33.177Z"
+    },
+    {
+      "phase": "PHASE 5",
+      "status": "PASS",
+      "message": "Conversion funnel logical",
+      "timestamp": "2026-01-28T21:24:33.179Z",
+      "details": {
+        "total_units": 7,
+        "booked_units": 4,
+        "sold_units": 0
+      }
+    },
+    {
+      "phase": "PHASE 5",
+      "status": "PASS",
+      "message": "Payment collections within booking values",
+      "timestamp": "2026-01-28T21:24:33.184Z"
+    },
+    {
+      "phase": "PHASE 6",
+      "status": "WARNING",
+      "message": "Labour cost might be using NET instead of GROSS",
+      "timestamp": "2026-01-28T21:24:33.185Z"
+    },
+    {
+      "phase": "PHASE 6",
+      "status": "PASS",
+      "message": "Material consumption ≤ purchases",
+      "timestamp": "2026-01-28T21:24:33.189Z",
+      "details": {
+        "purchased": 4933,
+        "consumed": 927
+      }
+    },
+    {
+      "phase": "PHASE 7",
+      "status": "PASS",
+      "message": "Date grouping done at SQL level (strftime)",
+      "timestamp": "2026-01-28T21:24:33.191Z"
+    },
+    {
+      "phase": "PHASE 7",
+      "status": "INFO",
+      "message": "Sample monthly data",
+      "timestamp": "2026-01-28T21:24:33.193Z",
+      "details": [
+        {
+          "month": "2023-01",
+          "income": 100
+        },
+        {
+          "month": "2023-10",
+          "income": 200
+        },
+        {
+          "month": "2024-01",
+          "income": 1500000
+        }
+      ]
+    },
+    {
+      "phase": "PHASE 7",
+      "status": "PASS",
+      "message": "Time grouping verified",
+      "timestamp": "2026-01-28T21:24:33.194Z"
+    }
+  ]
+}

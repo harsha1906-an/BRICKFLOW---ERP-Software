@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP - Real Estate & Construction</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div class="login-container" id="loginScreen">
+        <div class="login-card">
+            <div class="login-header">
+                <h1 class="login-title">BuildCorp ERP</h1>
+                <p class="login-subtitle">Real Estate & Construction Management</p>
+            </div>
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="form-input" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="Enter password">
+                </div>
+                <button type="submit" class="login-button">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container" id="mainApp" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="company-name">BuildCorp ERP</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" data-page="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="#projects" class="nav-item" data-page="projects">
+                    <span class="nav-icon">🏗️</span>
+                    <span class="nav-text">Projects</span>
+                </a>
+                <a href="#inventory" class="nav-item" data-page="inventory">
+                    <span class="nav-icon">📦</span>
+                    <span class="nav-text">Inventory</span>
+                </a>
+                <a href="#expenses" class="nav-item" data-page="expenses">
+                    <span class="nav-icon">💰</span>
+                    <span class="nav-text">Expenses</span>
+                </a>
+                <a href="#payments" class="nav-item" data-page="payments">
+                    <span class="nav-icon">💳</span>
+                    <span class="nav-text">Payments</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h2 class="page-title" id="pageTitle">Dashboard</h2>
+                <div class="header-right">
+                    <span class="user-info">Admin User</span>
+                </div>
+            </header>
+
+            <!-- Content Pages -->
+            <main class="content">
+                <!-- Dashboard Page -->
+                <div class="page active" id="dashboard">
+                    <div class="page-content">
+                        <h3>Dashboard</h3>
+                        <p>Welcome to the ERP system dashboard.</p>
+                    </div>
+                </div>
+
+                <!-- Projects Page -->
+                <div class="page" id="projects">
+                    <div class="page-content">
+                        <h3>Projects</h3>
+                        <p>Manage your real estate and construction projects here.</p>
+                    </div>
+                </div>
+
+                <!-- Inventory Page -->
+                <div class="page" id="inventory">
+                    <div class="page-content">
+                        <h3>Inventory</h3>
+                        <p>Track construction materials and supplies.</p>
+                    </div>
+                </div>
+
+                <!-- Expenses Page -->
+                <div class="page" id="expenses">
+                    <div class="page-content">
+                        <h3>Expenses</h3>
+                        <p>Monitor and manage company expenses.</p>
+                    </div>
+                </div>
+
+                <!-- Payments Page -->
+                <div class="page" id="payments">
+                    <div class="page-content">
+                        <h3>Payments</h3>
+                        <p>Handle vendor and contractor payments.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

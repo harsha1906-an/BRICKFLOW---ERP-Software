@@ -1,0 +1,10 @@
+[
+  {
+    "name": "labours",
+    "sql": "CREATE TABLE labours (\r\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\r\n  name TEXT NOT NULL,\r\n  type TEXT NOT NULL, -- carpenter, mason, electrician, plumber, helper, painter, etc.\r\n  gender TEXT NOT NULL CHECK(gender IN ('male', 'female')),\r\n  phone TEXT,\r\n  address TEXT,\r\n  employment_type TEXT DEFAULT 'daily' CHECK(employment_type IN ('daily', 'contract', 'permanent')),\r\n  skill_level TEXT DEFAULT 'skilled' CHECK(skill_level IN ('skilled', 'semi-skilled', 'unskilled')),\r\n  daily_wage REAL NOT NULL,\r\n  status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive')),\r\n  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,\r\n  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP\r\n, is_active INTEGER DEFAULT 1)"
+  },
+  {
+    "name": "labour_attendance",
+    "sql": "CREATE TABLE labour_attendance (\r\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\r\n  labour_id INTEGER NOT NULL,\r\n  project_id INTEGER NOT NULL,\r\n  attendance_date DATE NOT NULL,\r\n  status TEXT NOT NULL CHECK(status IN ('present', 'absent', 'half_day', 'leave')),\r\n  time_in TIME,\r\n  time_out TIME,\r\n  work_hours REAL DEFAULT 8,\r\n  overtime_hours REAL DEFAULT 0,\r\n  notes TEXT,\r\n  substitute_labour_id INTEGER,\r\n  created_at DATETIME DEFAULT CURRENT_TIMESTAMP, attendance_type TEXT DEFAULT 'FULL', marked_by INTEGER, labour_payment_id INTEGER,\r\n  FOREIGN KEY (labour_id) REFERENCES labours(id),\r\n  FOREIGN KEY (project_id) REFERENCES projects(id),\r\n  FOREIGN KEY (substitute_labour_id) REFERENCES labours(id),\r\n  UNIQUE(labour_id, attendance_date)\r\n)"
+  }
+]
