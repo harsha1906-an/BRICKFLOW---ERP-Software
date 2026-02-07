@@ -51,7 +51,27 @@ export default function CreateItem({ config, CreateForm }) {
   const [form] = Form.useForm();
   const [subTotal, setSubTotal] = useState(0);
   const [offerSubTotal, setOfferSubTotal] = useState(0);
+  const persistenceKey = `erp_form_${config.entity}_create_item`;
+
+  useEffect(() => {
+    // Load persisted data on mount
+    const savedData = window.sessionStorage.getItem(persistenceKey);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        form.setFieldsValue(parsed);
+        // Recalculate totals
+        handelValuesChange(null, parsed);
+      } catch (e) {
+        console.error('Failed to parse saved invoice form state', e);
+      }
+    }
+  }, [form, persistenceKey]);
+
   const handelValuesChange = (changedValues, values) => {
+    // Persist data
+    window.sessionStorage.setItem(persistenceKey, JSON.stringify(values));
+
     const items = values['items'];
     let subTotal = 0;
     let subOfferTotal = 0;
@@ -78,12 +98,13 @@ export default function CreateItem({ config, CreateForm }) {
   useEffect(() => {
     if (isSuccess) {
       form.resetFields();
+      window.sessionStorage.removeItem(persistenceKey);
       dispatch(erp.resetAction({ actionType: 'create' }));
       setSubTotal(0);
       setOfferSubTotal(0);
       navigate(`/${entity.toLowerCase()}/read/${result._id}`);
     }
-    return () => {};
+    return () => { };
   }, [isSuccess]);
 
   const onSubmit = (fieldsValue) => {

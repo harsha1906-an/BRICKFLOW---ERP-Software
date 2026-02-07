@@ -10,4 +10,12 @@ router.get('/companies/:companyId/daily-summary', catchErrors(async (req, res) =
     res.json(summary);
 }));
 
+const pdfController = require('@/controllers/pdfController');
+router.get('/companies/:companyId/daily-report-pdf', catchErrors(pdfController.downloadDailyReport));
+router.get('/customer/:id/pdf-details', catchErrors(pdfController.downloadCustomerDetails));
+router.get('/supplier/:id/pdf-details', catchErrors(pdfController.downloadSupplierDetails));
+router.get('/booking/:id/pdf-details', catchErrors(pdfController.downloadBookingDetails));
+router.get('/booking/:id/pdf-receipt', catchErrors(pdfController.downloadBookingReceipt));
+router.get('/labour/pdf-list', catchErrors(pdfController.downloadLabourList));
+
 module.exports = router;

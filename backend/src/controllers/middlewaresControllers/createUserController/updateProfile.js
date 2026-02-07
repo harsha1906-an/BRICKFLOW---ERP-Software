@@ -12,11 +12,13 @@ const updateProfile = async (userModel, req, res) => {
       name: req.body.name,
       surname: req.body.surname,
       photo: req.body.photo,
+      dashboardConfig: req.body.dashboardConfig,
     }
     : {
       email: req.body.email,
       name: req.body.name,
       surname: req.body.surname,
+      dashboardConfig: req.body.dashboardConfig,
     };
   // Find document by id and updates with the required fields
   const result = await User.findOneAndUpdate(
@@ -42,8 +44,10 @@ const updateProfile = async (userModel, req, res) => {
       email: result?.email,
       name: result?.name,
       surname: result?.surname,
+      user: result,
       photo: result?.photo,
       role: result?.role,
+      dashboardConfig: result?.dashboardConfig,
     },
     message: 'we update this profile by this id: ' + userProfile._id,
   });

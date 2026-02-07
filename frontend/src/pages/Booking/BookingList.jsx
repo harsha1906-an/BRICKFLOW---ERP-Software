@@ -1,12 +1,15 @@
+import React from 'react';
 import dayjs from 'dayjs';
 import useLanguage from '@/locale/useLanguage';
 import BookingDataTableModule from '@/modules/BookingModule/BookingDataTableModule';
 import { useMoney, useDate } from '@/settings';
+import { App } from 'antd';
 
 export default function BookingList() {
     const translate = useLanguage();
     const { dateFormat } = useDate();
     const { moneyFormatter } = useMoney();
+    const { message } = App.useApp();
 
     const searchConfig = {
         entity: 'client',

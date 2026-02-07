@@ -27,6 +27,7 @@ const MultiStepSelectAsync = ({
   value = {},
   onChange,
   style,
+  id,
 }) => {
   const firstSelectedOption = value.firstSelectedOption;
   const [firstSelectOptions, setFirstSelectOptions] = useState([]);
@@ -60,6 +61,7 @@ const MultiStepSelectAsync = ({
   return (
     <Space direction="vertical" style={style}>
       <Select
+        id={id}
         placeholder="Select an option"
         style={{ width: 200 }}
         {...firstSelectProps}

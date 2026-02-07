@@ -1,0 +1,357 @@
+import React, { useState, useEffect } from 'react';
+import { Divider, Button, Row, Col, Descriptions, Statistic, Tag, Table, Modal, Tooltip, Card, theme as antTheme, Form, Input, InputNumber, Select, DatePicker } from 'antd';
+import { PageHeader } from '@ant-design/pro-layout';
+import {
+    EditOutlined,
+    FilePdfOutlined,
+    CloseCircleOutlined,
+    WalletOutlined,
+    HistoryOutlined
+} from '@ant-design/icons';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { erp } from '@/redux/erp/actions';
+import { useMoney, useDate } from '@/settings';
+import useLanguage from '@/locale/useLanguage';
+import { request } from '@/request';
+import SupplierForm from '@/forms/SupplierForm';
+import dayjs from 'dayjs';
+
+const SupplierDetails = ({ item, config }) => {
+    const translate = useLanguage();
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const { moneyFormatter, currency_symbol } = useMoney();
+    const { dateFormat } = useDate();
+    const { token } = antTheme.useToken();
+
+    const [inventoryHistory, setInventoryHistory] = useState([]);
+    const [expenseHistory, setExpenseHistory] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
+    const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+
+    // Calculations
+    const [financials, setFinancials] = useState({
+        totalMaterialCost: 0,
+        totalPaid: 0,
+        balance: 0
+    });
+
+    useEffect(() => {
+        if (item?._id) {
+            fetchHistory();
+        }
+    }, [item]);
+
+    const fetchHistory = async () => {
+        setLoadingHistory(true);
+        try {
+            const inventoryRes = await request.list({
+                entity: 'inventorytransaction',
+                options: {
+                    filter: 'supplier',
+                    equal: item._id,
+                    items: 1000
+                }
+            });
+
+            const expenseRes = await request.list({
+                entity: 'expense',
+                options: {
+                    supplier: item._id,
+                    recipientType: 'Supplier',
+                    items: 1000
+                }
+            });
+
+            const transactions = inventoryRes.result || [];
+            const expenses = expenseRes.result || [];
+
+            setInventoryHistory(transactions);
+            setExpenseHistory(expenses);
+
+            const totalMaterialCost = transactions
+                .filter(t => t.type === 'inward')
+                .reduce((sum, t) => sum + (t.totalCost || 0), 0);
+
+            const totalPaid = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+            setFinancials({
+                totalMaterialCost,
+                totalPaid,
+                balance: totalMaterialCost - totalPaid
+            });
+
+        } catch (error) {
+            console.error("Error fetching supplier history:", error);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
+    const handleMakePayment = () => {
+        setPaymentModalVisible(true);
+    };
+
+    const handlePaymentSuccess = () => {
+        setPaymentModalVisible(false);
+        fetchHistory();
+    };
+
+    const formatDate = (date) => {
+        if (!date) return '';
+        return dayjs(date).format(dateFormat);
+    };
+
+    const inventoryColumns = [
+        { title: 'Date', dataIndex: 'date', render: d => formatDate(d) },
+        { title: 'Item', dataIndex: ['material', 'name'] },
+        { title: 'Qty', dataIndex: 'quantity', render: (q, r) => `${q} ${r.material?.unit || ''}` },
+        { title: 'Cost', dataIndex: 'totalCost', align: 'right', render: amount => moneyFormatter({ amount }) },
+        { title: 'Ref', dataIndex: 'reference' }
+    ];
+
+    const expenseColumns = [
+        { title: 'Date', dataIndex: 'date', render: d => formatDate(d) },
+        { title: 'Amount', dataIndex: 'amount', align: 'right', render: amount => moneyFormatter({ amount }) },
+        { title: 'Mode', dataIndex: 'paymentMode', render: m => <Tag color="blue">{m}</Tag> },
+        { title: 'Ref', dataIndex: 'reference' },
+        { title: 'Description', dataIndex: 'description', ellipsis: true }
+    ];
+
+    return (
+        <>
+            <PageHeader
+                onBack={() => navigate('/supplier')}
+                title={item.name}
+                subTitle={item.supplierType}
+                extra={[
+                    <Button key="close" onClick={() => navigate('/supplier')} icon={<CloseCircleOutlined />}>
+                        {translate('Close')}
+                    </Button>,
+                    <Button
+                        key="edit"
+                        type="primary"
+                        onClick={() => {
+                            dispatch(
+                                erp.currentAction({
+                                    actionType: 'update',
+                                    data: item,
+                                })
+                            );
+                            navigate(`/supplier/update/${item._id}`);
+                        }}
+                        icon={<EditOutlined />}
+                    >
+                        {translate('Edit')}
+                    </Button>,
+                ]}
+            >
+                <Row gutter={16}>
+                    <Col span={16}>
+                        <Descriptions column={2}>
+                            <Descriptions.Item label={translate('Email')}>{item.email}</Descriptions.Item>
+                            <Descriptions.Item label={translate('Phone')}>{item.phone}</Descriptions.Item>
+                            <Descriptions.Item label={translate('City')}>{item.city}</Descriptions.Item>
+                            <Descriptions.Item label={translate('Tax ID')}>{item.taxNumber}</Descriptions.Item>
+                            <Descriptions.Item label={translate('Address')} span={2}>{item.address}</Descriptions.Item>
+                        </Descriptions>
+                    </Col>
+                    <Col span={8} style={{ textAlign: 'right' }}>
+                        <Button
+                            type="primary"
+                            size="large"
+                            icon={<WalletOutlined />}
+                            onClick={handleMakePayment}
+                            style={{ marginBottom: 10, background: token.colorSuccess, borderColor: token.colorSuccess }}
+                        >
+                            Make Payment
+                        </Button>
+                    </Col>
+                </Row>
+            </PageHeader>
+
+            <Divider dashed />
+
+            <Row gutter={16} style={{ marginBottom: 24 }}>
+                <Col span={8}>
+                    <Card bordered={true} style={{ borderColor: token.colorSuccess, textAlign: 'center' }}>
+                        <Statistic
+                            title="Total Material Cost"
+                            value={financials.totalMaterialCost}
+                            precision={2}
+                            formatter={val => moneyFormatter({ amount: val })}
+                            valueStyle={{ color: token.colorSuccess }}
+                        />
+                    </Card>
+                </Col>
+                <Col span={8}>
+                    <Card bordered={true} style={{ borderColor: token.colorPrimary, textAlign: 'center' }}>
+                        <Statistic
+                            title="Total Paid"
+                            value={financials.totalPaid}
+                            precision={2}
+                            formatter={val => moneyFormatter({ amount: val })}
+                            valueStyle={{ color: token.colorPrimary }}
+                        />
+                    </Card>
+                </Col>
+                <Col span={8}>
+                    <StatisticCard Balance={financials.balance} moneyFormatter={moneyFormatter} token={token} />
+                </Col>
+            </Row>
+
+            <Row gutter={24}>
+                <Col span={12}>
+                    <Divider orientation="left"><HistoryOutlined /> Material History (Inward)</Divider>
+                    <Table
+                        columns={inventoryColumns}
+                        dataSource={inventoryHistory}
+                        rowKey="_id"
+                        loading={loadingHistory}
+                        pagination={{ pageSize: 5 }}
+                        size="small"
+                    />
+                </Col>
+                <Col span={12}>
+                    <Divider orientation="left"><WalletOutlined /> Payment History</Divider>
+                    <Table
+                        columns={expenseColumns}
+                        dataSource={expenseHistory}
+                        rowKey="_id"
+                        loading={loadingHistory}
+                        pagination={{ pageSize: 5 }}
+                        size="small"
+                    />
+                </Col>
+            </Row>
+
+            {/* Payment Modal */}
+            <Modal
+                title={`Make Payment to ${item.name}`}
+                open={paymentModalVisible}
+                onCancel={() => setPaymentModalVisible(false)}
+                footer={null}
+                destroyOnClose
+                width={800}
+            >
+                <PaymentWrapper
+                    supplier={item}
+                    onSuccess={handlePaymentSuccess}
+                    maxAmount={financials.balance > 0 ? financials.balance : null}
+                    moneyFormatter={moneyFormatter}
+                    currency_symbol={currency_symbol}
+                />
+            </Modal>
+        </>
+    );
+};
+
+const StatisticCard = ({ Balance, moneyFormatter, token }) => {
+    return (
+        <Card bordered={true} style={{ borderColor: Balance > 0 ? token.colorError : token.colorSuccess, textAlign: 'center' }}>
+            <Statistic
+                title="Balance Payable"
+                value={Balance}
+                precision={2}
+                formatter={val => moneyFormatter({ amount: val })}
+                valueStyle={{ color: Balance > 0 ? token.colorError : token.colorSuccess }}
+            />
+        </Card>
+    )
+}
+
+const PaymentWrapper = ({ supplier, onSuccess, maxAmount, moneyFormatter, currency_symbol }) => {
+    const [form] = Form.useForm();
+    const [loading, setLoading] = useState(false);
+
+    const onFinish = async (values) => {
+        setLoading(true);
+        try {
+            const payload = {
+                ...values,
+                recipientType: 'Supplier',
+                supplier: supplier._id, // Enforce current supplier
+            };
+            const response = await request.create({ entity: 'expense', jsonData: payload });
+            if (response.success) {
+                onSuccess();
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    return (
+        <Form
+            form={form}
+            layout="vertical"
+            onFinish={onFinish}
+            initialValues={{
+                paymentMode: 'Cash',
+                recipientType: 'Supplier',
+                supplier: supplier._id
+            }}
+        >
+            <Form.Item name="recipientType" hidden><Input /></Form.Item>
+            <Form.Item name="supplier" hidden><Input /></Form.Item>
+
+            <QuickPaymentForm maxAmount={maxAmount} currency_symbol={currency_symbol} />
+
+            <Form.Item>
+                <Button type="primary" htmlType="submit" loading={loading} block>
+                    Record Payment
+                </Button>
+            </Form.Item>
+        </Form>
+    );
+};
+
+const QuickPaymentForm = ({ maxAmount, currency_symbol }) => {
+    return (
+        <>
+            <Row gutter={16}>
+                <Col span={12}>
+                    <Form.Item name="date" label="Date" initialValue={dayjs()} rules={[{ required: true }]}>
+                        <DatePicker style={{ width: '100%' }} />
+                    </Form.Item>
+                </Col>
+                <Col span={12}>
+                    <Form.Item name="amount" label="Amount" initialValue={maxAmount} rules={[{ required: true }]}>
+                        <InputNumber
+                            min={0}
+                            style={{ width: '100%' }}
+                            addonBefore={currency_symbol}
+                        />
+                    </Form.Item>
+                </Col>
+            </Row>
+            <Row gutter={16}>
+                <Col span={12}>
+                    <Form.Item name="paymentMode" label="Payment Mode" rules={[{ required: true }]}>
+                        <Select>
+                            <Select.Option value="Cash">Cash</Select.Option>
+                            <Select.Option value="Bank Transfer">Bank Transfer</Select.Option>
+                            <Select.Option value="Cheque">Cheque</Select.Option>
+                            <Select.Option value="UPI">UPI</Select.Option>
+                            <Select.Option value="Card">Card</Select.Option>
+                        </Select>
+                    </Form.Item>
+                </Col>
+                <Col span={12}>
+                    <Form.Item name="reference" label="Reference / Transaction ID">
+                        <Input />
+                    </Form.Item>
+                </Col>
+            </Row>
+            <Form.Item name="description" label="Notes">
+                <Input.TextArea rows={2} />
+            </Form.Item>
+        </>
+    )
+}
+
+export default SupplierDetails;

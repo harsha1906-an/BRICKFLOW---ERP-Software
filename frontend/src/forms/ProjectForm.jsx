@@ -1,7 +1,8 @@
-import React from 'react';
 import { Form, Input, InputNumber, Row, Col, Select, DatePicker } from 'antd';
+import useMoney from '@/settings/useMoney';
 
 export default function ProjectForm({ isUpdateForm = false }) {
+    const { currency_symbol } = useMoney();
     return (
         <>
             <Row gutter={[24, 24]}>
@@ -38,8 +39,8 @@ export default function ProjectForm({ isUpdateForm = false }) {
                     <Form.Item label="Budget" name="budget">
                         <InputNumber
                             style={{ width: '100%' }}
-                            formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                            parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
+                            formatter={(value) => (value ? `${currency_symbol} ${value}` : '').replace(/\B(?=(?:\d{2})+(?!\d)(?:\d{3})?)/g, ',')}
+                            parser={(value) => value.replace(new RegExp(`\\${currency_symbol}\\s?|(,*)`, 'g'), '')}
                         />
                     </Form.Item>
                 </Col>

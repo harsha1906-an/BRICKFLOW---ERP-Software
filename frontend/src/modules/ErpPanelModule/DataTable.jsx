@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, Fragment } from 'react';
+import dayjs from 'dayjs';
 import {
   EyeOutlined,
   EditOutlined,
@@ -9,9 +10,11 @@ import {
   EllipsisOutlined,
   ArrowRightOutlined,
   ArrowLeftOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
-import { Dropdown, Table, Button } from 'antd';
+import { Dropdown, Table, Button, App } from 'antd'; // Added App import
 import { PageHeader } from '@ant-design/pro-layout';
+import axios from 'axios'; // Added axios import
 
 import AutoCompleteAsync from '@/components/AutoCompleteAsync';
 import { useSelector, useDispatch } from 'react-redux';
@@ -39,7 +42,7 @@ function AddNewItem({ config }) {
   );
 }
 
-export default function DataTable({ config, extra = [] }) {
+export default function DataTable({ config, extra = [], customFilters }) {
   const translate = useLanguage();
   let { entity, dataTableColumns, disableAdd = false, searchConfig } = config;
 
@@ -51,6 +54,7 @@ export default function DataTable({ config, extra = [] }) {
 
   const { erpContextAction } = useErpContext();
   const { modal } = erpContextAction;
+  const { message } = App.useApp(); // Use App hook for message
 
   const items = [
     {
@@ -62,11 +66,6 @@ export default function DataTable({ config, extra = [] }) {
       label: translate('Edit'),
       key: 'edit',
       icon: <EditOutlined />,
-    },
-    {
-      label: translate('Download'),
-      key: 'download',
-      icon: <FilePdfOutlined />,
     },
     ...extra,
     {
@@ -91,9 +90,6 @@ export default function DataTable({ config, extra = [] }) {
     dispatch(erp.currentAction({ actionType: 'update', data }));
     navigate(`/${entity}/update/${record._id}`);
   };
-  const handleDownload = (record) => {
-    window.open(`${DOWNLOAD_BASE_URL}${entity}/${entity}-${record._id}.pdf`, '_blank');
-  };
 
   const handleDelete = (record) => {
     dispatch(erp.currentAction({ actionType: 'delete', data: record }));
@@ -103,6 +99,40 @@ export default function DataTable({ config, extra = [] }) {
   const handleRecordPayment = (record) => {
     dispatch(erp.currentItem({ data: record }));
     navigate(`/invoice/pay/${record._id}`);
+  };
+
+  const handleDownloadCSV = () => {
+    if (!dataSource || dataSource.length === 0) return;
+
+    // Helper to flatten nested objects for CSV
+    const getVal = (obj, path) => {
+      if (Array.isArray(path)) {
+        return path.reduce((prev, curr) => (prev ? prev[curr] : ''), obj);
+      }
+      return obj[path];
+    };
+
+    const headers = dataTableColumns.filter(c => c.title && c.dataIndex).map(c => c.title);
+    const csvRows = [headers.join(',')];
+
+    dataSource.forEach(record => {
+      const row = dataTableColumns.filter(c => c.title && c.dataIndex).map(c => {
+        let val = getVal(record, c.dataIndex) || '';
+        // Clean values for CSV
+        if (typeof val === 'string') val = `"${val.replace(/"/g, '""')}"`;
+        return val;
+      });
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `${entity}_list_${dayjs().format('YYYY-MM-DD')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   dataTableColumns = [
@@ -122,9 +152,6 @@ export default function DataTable({ config, extra = [] }) {
                   break;
                 case 'edit':
                   handleEdit(record);
-                  break;
-                case 'download':
-                  handleDownload(record);
                   break;
                 case 'delete':
                   handleDelete(record);
@@ -181,6 +208,7 @@ export default function DataTable({ config, extra = [] }) {
         onBack={() => window.history.back()}
         backIcon={<ArrowLeftOutlined />}
         extra={[
+          <Fragment key={`${uniqueId()}`}>{customFilters}</Fragment>,
           <AutoCompleteAsync
             key={`${uniqueId()}`}
             entity={searchConfig?.entity}
@@ -191,6 +219,9 @@ export default function DataTable({ config, extra = [] }) {
           // withRedirect
           // urlToRedirect={'/customer'}
           />,
+          <Button onClick={handleDownloadCSV} key={`${uniqueId()}`} icon={<DownloadOutlined />}>
+            {translate('Download CSV')}
+          </Button>,
           <Button onClick={handelDataTableLoad} key={`${uniqueId()}`} icon={<RedoOutlined />}>
             {translate('Refresh')}
           </Button>,

@@ -4,18 +4,60 @@ const moment = require('moment');
 
 module.exports = downloadPdf = async (req, res, { directory, id }) => {
   try {
-    const modelName = directory.slice(0, 1).toUpperCase() + directory.slice(1);
+    let modelName = directory.slice(0, 1).toUpperCase() + directory.slice(1);
+    if (directory === 'paymentrequest' || directory === 'bookingreceipt') {
+      modelName = 'Booking';
+    }
+
     if (mongoose.models[modelName]) {
       const Model = mongoose.model(modelName);
-      const result = await Model.findOne({
-        _id: id,
-      })
-        .populate('client villa')
-        .exec();
+      let query = Model.findOne({ _id: id });
+      if (Model.schema.paths.client) query = query.populate('client');
+      if (Model.schema.paths.villa) query = query.populate('villa');
+      if (Model.schema.paths.labour) query = query.populate('labour');
+      if (Model.schema.paths.supplier) query = query.populate('supplier');
+      const result = await query.exec();
 
       // Throw error if no result
       if (!result) {
         throw { name: 'ValidationError' };
+      }
+
+      // Handle paymentrequest specific logic
+      if (directory === 'paymentrequest') {
+        const milestoneId = req.query.milestoneId;
+        const milestone = result.paymentPlan.find(m => m._id.toString() === milestoneId);
+        if (!milestone) {
+          return res.status(404).json({
+            success: false,
+            message: 'Milestone not found'
+          });
+        }
+        result.requestedMilestone = milestone;
+        // set a virtual date for the filename logic below
+        result.date = milestone.dueDate || result.bookingDate;
+        result.number = milestone.name.replace(/[^a-z0-9]/gi, '_');
+      }
+
+      // Handle Booking Receipt logic
+      if (directory === 'bookingreceipt') {
+        const { numberToWords } = require('@/helpers');
+        result.inWords = numberToWords(result.downPayment || 0);
+        // Reset modelName to 'BookingReceipt' so it uses the correct PUG template
+        modelName = 'BookingReceipt';
+      }
+
+      // Handle Expense Voucher logic
+      if (directory === 'expense') {
+        const { numberToWords } = require('@/helpers');
+        result.inWords = numberToWords(result.amount || 0);
+        // Reset modelName to 'expensevoucher' so it uses the correct PUG template
+        modelName = 'expensevoucher';
+      }
+
+      // Handle Supplier logic to use supplierDetails template
+      if (directory === 'supplier') {
+        modelName = 'supplierDetails';
       }
 
       // Continue process if result is returned
@@ -30,22 +72,21 @@ module.exports = downloadPdf = async (req, res, { directory, id }) => {
       const invoiceNum = result.number ? `${result.number}-${result.year || ''}` : id;
       const downloadName = `${modelName}_${clientName}_${invoiceNum}_${dateStr}.pdf`;
 
-      await custom.generatePdf(
+      const pdfFormat = (modelName.toLowerCase() === 'bookingreceipt' || modelName.toLowerCase() === 'expensevoucher') ? 'A5' : 'A4';
+
+      const pdfBuffer = await custom.generatePdf(
         modelName,
-        { filename: folderPath, format: 'A4', targetLocation },
-        result,
-        async () => {
-          return res.download(targetLocation, downloadName, (error) => {
-            if (error)
-              return res.status(500).json({
-                success: false,
-                result: null,
-                message: "Couldn't find file",
-                error: error.message,
-              });
-          });
-        }
+        { filename: folderPath, format: pdfFormat }, // targetLocation removed
+        result
       );
+
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${downloadName}"`,
+        'Content-Length': pdfBuffer.length,
+      });
+
+      return res.send(Buffer.from(pdfBuffer));
     } else {
       return res.status(404).json({
         success: false,

@@ -8,7 +8,7 @@ const read = async (req, res) => {
     _id: req.params.id,
     removed: false,
   })
-    .populate('createdBy', 'name')
+    .populate('client villa createdBy', 'name villaNumber')
     .exec();
   // If no results found, return document not found
   if (!result) {

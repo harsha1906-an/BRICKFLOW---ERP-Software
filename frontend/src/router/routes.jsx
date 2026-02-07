@@ -61,6 +61,12 @@ const ProjectRead = lazy(() => import('@/pages/Project/ProjectRead'));
 const Booking = lazy(() => import('@/pages/Booking/BookingList'));
 const BookingCreate = lazy(() => import('@/pages/Booking/BookingCreate'));
 const BookingRead = lazy(() => import('@/pages/Booking/BookingRead'));
+const BookingUpdate = lazy(() => import('@/pages/Booking/BookingUpdate'));
+
+const Expense = lazy(() => import('@/pages/Expense'));
+const ExpenseCreate = lazy(() => import('@/pages/Expense/ExpenseCreate'));
+const VillaReports = lazy(() => import('@/pages/VillaReports'));
+const VillaReportDetail = lazy(() => import('@/pages/VillaReports/VillaReportDetail'));
 
 let routes = {
   expense: [],
@@ -86,6 +92,14 @@ let routes = {
       element: <DailyReport />,
     },
     {
+      path: '/villa-reports',
+      element: <VillaReports />,
+    },
+    {
+      path: '/villa-reports/:id',
+      element: <VillaReportDetail />,
+    },
+    {
       path: '/customer',
       element: <Customer />,
     },
@@ -103,25 +117,34 @@ let routes = {
     },
 
     {
-      path: '/invoice',
-      element: <Invoice />,
+      path: '/expense',
+      element: <Expense />,
     },
     {
-      path: '/invoice/create',
-      element: <InvoiceCreate />,
+      path: '/expense/create',
+      element: <ExpenseCreate />,
     },
-    {
-      path: '/invoice/read/:id',
-      element: <InvoiceRead />,
-    },
-    {
-      path: '/invoice/update/:id',
-      element: <InvoiceUpdate />,
-    },
-    {
-      path: '/invoice/pay/:id',
-      element: <InvoiceRecordPayment />,
-    },
+
+    // {
+    //   path: '/invoice',
+    //   element: <Invoice />,
+    // },
+    // {
+    //   path: '/invoice/create',
+    //   element: <InvoiceCreate />,
+    // },
+    // {
+    //   path: '/invoice/read/:id',
+    //   element: <InvoiceRead />,
+    // },
+    // {
+    //   path: '/invoice/update/:id',
+    //   element: <InvoiceUpdate />,
+    // },
+    // {
+    //   path: '/invoice/pay/:id',
+    //   element: <InvoiceRecordPayment />,
+    // },
     {
       path: '/quote',
       element: <Quote />,
@@ -154,10 +177,10 @@ let routes = {
       path: '/paymentupdate',
       element: <PaymentUpdateList />,
     },
-    {
-      path: '/invoiceupdate',
-      element: <InvoiceUpdateList />,
-    },
+    // {
+    //   path: '/invoiceupdate',
+    //   element: <InvoiceUpdateList />,
+    // },
     {
       path: '/approvals',
       element: <Approvals />,
@@ -265,6 +288,10 @@ let routes = {
     {
       path: '/booking/read/:id',
       element: <BookingRead />,
+    },
+    {
+      path: '/booking/update/:id',
+      element: <BookingUpdate />,
     },
     {
       path: '/profile',

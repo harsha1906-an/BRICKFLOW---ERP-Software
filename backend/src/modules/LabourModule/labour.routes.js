@@ -49,7 +49,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update labour
-router.put('/:labourId', async (req, res) => {
+router.patch('/:labourId', async (req, res) => {
   try {
     const { companyId, labourId } = req.params;
     const update = req.body;

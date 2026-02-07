@@ -18,20 +18,27 @@ export default function CreateForm({ config, formElements, withUpload = false })
   const { panel, collapsedBox, readBox } = crudContextAction;
   const [form] = Form.useForm();
   const translate = useLanguage();
-  const onSubmit = (fieldsValue) => {
-    // Manually trim values before submission
+  const persistenceKey = `erp_form_${entity}_create`;
 
+  const onSubmit = (fieldsValue) => {
     if (fieldsValue.file && withUpload) {
       fieldsValue.file = fieldsValue.file[0].originFileObj;
     }
-
-    // const trimmedValues = Object.keys(fieldsValue).reduce((acc, key) => {
-    //   acc[key] = typeof fieldsValue[key] === 'string' ? fieldsValue[key].trim() : fieldsValue[key];
-    //   return acc;
-    // }, {});
-
     dispatch(crud.create({ entity, jsonData: fieldsValue, withUpload }));
   };
+
+  useEffect(() => {
+    // Load persisted data on mount
+    const savedData = window.sessionStorage.getItem(persistenceKey);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        form.setFieldsValue(parsed);
+      } catch (e) {
+        console.error('Failed to parse saved form state', e);
+      }
+    }
+  }, [form, persistenceKey]);
 
   useEffect(() => {
     if (isSuccess) {
@@ -39,14 +46,19 @@ export default function CreateForm({ config, formElements, withUpload = false })
       collapsedBox.open();
       panel.open();
       form.resetFields();
+      window.sessionStorage.removeItem(persistenceKey);
       dispatch(crud.resetAction({ actionType: 'create' }));
       dispatch(crud.list({ entity }));
     }
   }, [isSuccess]);
 
+  const handleValuesChange = (_, allValues) => {
+    window.sessionStorage.setItem(persistenceKey, JSON.stringify(allValues));
+  };
+
   return (
     <Loading isLoading={isLoading}>
-      <Form form={form} layout="vertical" onFinish={onSubmit}>
+      <Form form={form} layout="vertical" onFinish={onSubmit} onValuesChange={handleValuesChange}>
         {formElements}
         <Form.Item>
           <Button type="primary" htmlType="submit">

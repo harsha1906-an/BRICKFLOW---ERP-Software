@@ -1,0 +1,225 @@
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title Booking Receipt
+    style.
+      * {
+        box-sizing: border-box;
+      }
+      @page {
+        size: A5 landscape;
+        margin: 0;
+      }
+      body {
+        font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+        margin: 0;
+        padding: 0;
+        color: #333;
+        font-size: 11pt;
+        width: 100%;
+        height: 100vh;
+        position: relative;
+      }
+      .container {
+        border: 2px solid #ddd;
+        padding: 5mm;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: #fff;
+        z-index: 1; /* Behind strips but contains content */
+        padding-top: 8mm; /* Space for top strip */
+        padding-bottom: 8mm; /* Space for bottom strip */
+      }
+      .top-strip {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5mm;
+        background: linear-gradient(90deg, #666 40%, #e67e22 40%);
+        z-index: 2;
+      }
+      .bottom-strip {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 5mm;
+        background: linear-gradient(90deg, #e67e22 60%, #666 60%);
+        z-index: 2;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5mm;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 2mm;
+      }
+      .logo-section {
+        width: 25%;
+        text-align: center;
+      }
+      .title-section {
+        width: 50%;
+        text-align: center;
+      }
+      .company-name {
+        color: #e67e22; /* Orange color */
+        font-size: 24pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin: 0;
+      }
+      .contact-info {
+        font-size: 9pt;
+        margin-top: 2px;
+      }
+      .address-section {
+        width: 25%;
+        font-size: 8pt;
+        text-align: right;
+        line-height: 1.2;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4mm;
+        align-items: baseline;
+      }
+      .field-row {
+        display: flex;
+        margin-bottom: 5mm;
+        align-items: baseline;
+      }
+      .label {
+        white-space: nowrap;
+        margin-right: 2mm;
+        font-weight: 500;
+      }
+      .value-line {
+        border-bottom: 1px dotted #333;
+        flex-grow: 1;
+        padding-left: 2mm;
+        min-height: 18px;
+        font-weight: bold;
+      }
+      .payment-mode-section {
+        margin-top: 5mm;
+        font-weight: bold;
+        font-size: 12pt;
+      }
+      .amount-box {
+        border: 2px solid #333;
+        padding: 2mm 5mm;
+        display: inline-block;
+        font-size: 14pt;
+        font-weight: bold;
+        min-width: 40mm;
+        text-align: right;
+      }
+      .footer {
+        position: absolute;
+        bottom: 5mm;
+        left: 5mm;
+        right: 5mm;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+      .signature-line {
+        border-top: 1px solid #333;
+        width: 40mm;
+        text-align: center;
+        padding-top: 1mm;
+        font-size: 9pt;
+      }
+      
+      /* Decorative corners matching the image roughly */
+      .top-strip {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5mm;
+        background: linear-gradient(90deg, #666 40%, #e67e22 40%);
+      }
+      .bottom-strip {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 5mm;
+        background: linear-gradient(90deg, #e67e22 60%, #666 60%);
+      }
+
+  body
+    .top-strip
+    .container
+      .header
+        .logo-section
+          if logo
+            img(src=logo, style="width: 100%; max-width: 35mm; height: auto;")
+          else
+            h1(style="font-size:30pt; margin:0; line-height:0.8;") 
+              span(style="color:#bfa05f") #{settings.currency_symbol} 
+              span(style="color:#333") B
+            div(style="font-size:8pt; font-weight:bold") BEST ENCLAVE
+        .title-section
+          //- Removed duplicate company name if logo contains it, but user might want text too. 
+          //- Based on image "BEST ENCLAVE" is text next to logo.
+          div.company-name BEST ENCLAVE
+          div.contact-info Cell: 99524 52139, 73391 11784
+        .address-section
+          div E: bestenclave@gmail.com
+          div SF.No.287/2, Thorapalli Agraharam,
+          div Onnalvadi Main Road, HOSUR-635 109. TN
+
+      .row
+        div(style="width: 20%")
+          span.label S.No. 
+          span.value-line #{model.villaNumber ? model.villaNumber.replace(/\D/g,'') : ''}
+        div(style="width: 40%; text-align:right")
+          span.label Date: 
+          span.value-line #{moment(model.bookingDate).format('DD/MM/YYYY')}
+
+      .field-row
+        span.label Received with thanks from
+        span.value-line #{model.client ? model.client.name : ''}
+
+      .field-row
+        span.label In word
+        span.value-line #{model.inWords} Only
+
+      .field-row
+        span.label For
+        div.value-line Booking Advance for Plot No: #{model.villa ? model.villa.villaNumber : ''}
+
+      .row
+        div(style="width: 40%; display:flex")
+          span.label Plot No.
+          span.value-line #{model.villa ? model.villa.villaNumber : ''}
+        div(style="width: 50%; display:flex")
+          span.label Transaction ID
+          span.value-line #{model.transactionId || '-'}
+
+      .payment-mode-section
+        span Payment Mode: 
+        span(style="margin-left:5mm; font-weight:normal; border-bottom: 1px dotted #000; padding: 0 10mm") #{model.paymentMethod}
+
+      .footer
+        div
+          div.signature-line Customer Signature
+        
+        div(style="display:flex; align-items:flex-end")
+          span(style="font-size:16pt; font-weight:bold; margin-right:2mm") Rs.
+          div.amount-box #{moneyFormatter({amount:model.downPayment})}
+        
+        div
+          div.signature-line Authorized Signature
+    
+    .bottom-strip

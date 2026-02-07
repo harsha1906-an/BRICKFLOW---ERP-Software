@@ -36,10 +36,11 @@ const update = async (req, res) => {
   const previousPayment = await Model.findOne({
     _id: req.params.id,
     removed: false,
-  });
+  }).populate('invoice');
 
   const { amount: previousAmount } = previousPayment;
-  const { id: invoiceId, total, discount, credit: previousCredit } = previousPayment.invoice;
+  const { total, discount, credit: previousCredit } = previousPayment.invoice;
+  const invoiceId = previousPayment.invoice._id;
 
   const { amount: currentAmount } = req.body;
 
@@ -50,8 +51,8 @@ const update = async (req, res) => {
     return res.status(202).json({
       success: false,
       result: null,
-      message: `The Max Amount you can add is ${maxAmount + previousAmount}`,
-      error: `The Max Amount you can add is ${maxAmount + previousAmount}`,
+      message: `The Max Amount you can add is ${calculate.add(maxAmount, previousAmount)}`,
+      error: `The Max Amount you can add is ${calculate.add(maxAmount, previousAmount)}`,
     });
   }
 

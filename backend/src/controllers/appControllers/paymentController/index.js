@@ -7,6 +7,8 @@ const summary = require('./summary');
 const update = require('./update');
 const remove = require('./remove');
 const sendMail = require('./sendMail');
+const list = require('./list');
+const read = require('./read');
 
 // BrickFlow payment guards
 
@@ -18,5 +20,8 @@ methods.create = create;
 methods.update = update;
 methods.delete = remove;
 methods.summary = summary;
+methods.list = list;
+
+methods.read = read;
 
 module.exports = methods;

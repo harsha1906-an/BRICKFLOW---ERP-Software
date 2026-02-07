@@ -23,7 +23,6 @@ const paymentSchema = new mongoose.Schema({
   villa: {
     type: mongoose.Schema.ObjectId,
     ref: 'Villa',
-    autopopulate: true,
   },
   booking: {
     type: mongoose.Schema.ObjectId,

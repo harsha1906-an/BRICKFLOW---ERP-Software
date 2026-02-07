@@ -29,6 +29,7 @@ import {
   ProjectOutlined,
   TeamOutlined,
   FileProtectOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -114,15 +115,25 @@ function Sidebar({ collapsible, isMobile = false }) {
       label: <Link to={'/pettycash'}>Petty Cash</Link>,
     },
     {
+      key: 'expense',
+      icon: <DollarOutlined />,
+      label: <Link to={'/expense'}>Expenses</Link>,
+    },
+    {
       key: 'daily-summary',
       icon: <ContainerOutlined />,
       label: <Link to={'/daily-summary'}>Daily Expenses</Link>,
     },
     {
-      key: 'invoice',
-      icon: <ContainerOutlined />,
-      label: <Link to={'/invoice'}>{translate('invoices')}</Link>,
+      key: 'villa-reports',
+      icon: <ProjectOutlined />,
+      label: <Link to={'/villa-reports'}>Villa Reports</Link>,
     },
+    // {
+    //   key: 'invoice',
+    //   icon: <ContainerOutlined />,
+    //   label: <Link to={'/invoice'}>{translate('invoices')}</Link>,
+    // },
     {
       key: 'quote',
       icon: <FileSyncOutlined />,

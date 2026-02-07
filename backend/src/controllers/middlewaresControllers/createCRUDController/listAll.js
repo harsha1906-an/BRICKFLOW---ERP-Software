@@ -7,14 +7,14 @@ const listAll = async (Model, req, res) => {
   let result;
   if (enabled === undefined) {
     result = await Model.find({
-      removed: false,
+      removed: { $ne: true },
     })
       .sort({ created: sort })
       .populate()
       .exec();
   } else {
     result = await Model.find({
-      removed: false,
+      removed: { $ne: true },
       enabled: enabled,
     })
       .sort({ created: sort })

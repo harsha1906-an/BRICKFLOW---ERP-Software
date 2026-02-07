@@ -13,6 +13,26 @@ const schema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    supplierType: {
+        type: String,
+        enum: [
+            'cement',
+            'aggregate',
+            'steel',
+            'rods',
+            'bricks',
+            'tiles',
+            'electrical',
+            'plumbing',
+            'hardware',
+            'paint',
+            'wood',
+            'glass',
+            'sanitary',
+            'other'
+        ],
+        default: 'other'
+    },
     email: {
         type: String,
         trim: true,
@@ -21,6 +41,12 @@ const schema = new mongoose.Schema({
     phone: {
         type: String,
         trim: true,
+        validate: {
+            validator: function (v) {
+                return !v || /^[0-9]{10}$/.test(v);
+            },
+            message: (props) => `${props.value} is not a valid 10-digit phone number!`,
+        },
     },
     address: {
         type: String,

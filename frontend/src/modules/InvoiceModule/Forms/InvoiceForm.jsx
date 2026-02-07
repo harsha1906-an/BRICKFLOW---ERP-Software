@@ -197,6 +197,14 @@ function LoadInvoiceForm({ subTotal = 0, current = null }) {
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
         </Col>
+        <Col className="gutter-row" span={5}>
+          <Form.Item
+            label={translate('Reference')}
+            name="reference"
+          >
+            <Input />
+          </Form.Item>
+        </Col>
 
         <Col className="gutter-row" span={5}>
           <Form.Item

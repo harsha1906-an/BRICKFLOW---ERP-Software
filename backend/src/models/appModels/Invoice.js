@@ -16,6 +16,9 @@ const invoiceSchema = new mongoose.Schema({
     required: true,
   },
   content: String,
+  reference: {
+    type: String,
+  },
   recurring: {
     type: String,
     enum: ['daily', 'weekly', 'monthly', 'annually', 'quarter'],

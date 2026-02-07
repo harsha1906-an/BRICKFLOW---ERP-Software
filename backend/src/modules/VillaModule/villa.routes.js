@@ -3,6 +3,10 @@ const router = express.Router({ mergeParams: true });
 const Villa = require('../../models/appModels/Villa');
 
 const { logAuditAction } = require('../AuditLogModule');
+const villaController = require('../../controllers/appControllers/villaController');
+
+// Get Villa Progress Summary for Dashboard
+router.get('/progress-summary', villaController.progressSummary);
 
 // List Villas for a company
 router.get('/', async (req, res) => {

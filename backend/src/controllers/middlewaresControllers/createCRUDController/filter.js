@@ -7,7 +7,7 @@ const filter = async (Model, req, res) => {
     });
   }
   const result = await Model.find({
-    removed: false,
+    removed: { $ne: true },
   })
     .where(req.query.filter)
     .equals(req.query.equal)

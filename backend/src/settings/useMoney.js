@@ -11,20 +11,10 @@ const useMoney = ({ settings }) => {
   } = settings;
 
   function currencyFormat(amount) {
-    return currency(amount).dollars() > 0 || !zero_format
-      ? currency(amount, {
-          separator: thousand_sep,
-          decimal: decimal_sep,
-          symbol: '',
-          precision: cent_precision,
-        }).format()
-      : 0 +
-          currency(amount, {
-            separator: thousand_sep,
-            decimal: decimal_sep,
-            symbol: '',
-            precision: cent_precision,
-          }).format();
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: cent_precision,
+      maximumFractionDigits: cent_precision,
+    }).format(amount);
   }
 
   function moneyFormatter({ amount = 0 }) {

@@ -50,7 +50,7 @@ const search = async (req, res) => {
         'attendance': { path: '/attendance', label: 'Attendance', keywords: ['mark attendance', 'daily roll', 'presence'] },
         'labour': { path: '/labour', label: 'Labour Management', keywords: ['workers', 'people', 'staff', 'employees'] },
         'daily expense': { path: '/daily-summary', label: 'Daily Summary', keywords: ['expenses', 'daily report', 'summary'] },
-        'petty cash': { path: '/pettycash', label: 'Petty Cash', keywords: ['small cash', 'outward', 'cash transactions'] },
+        'petty cash': { path: '/pettycash', label: 'Petty Cash', keywords: ['small cash', 'outward', 'cash transactions', 'daily report', 'petty cash report'] },
         'settings': { path: '/settings', label: 'Settings', keywords: ['config', 'setup', 'options'] },
         'profile': { path: '/profile', label: 'My Profile', keywords: ['account', 'user profile'] },
         'dashboard': { path: '/', label: 'Dashboard', keywords: ['home', 'main page', 'overview'] },
@@ -129,11 +129,13 @@ const search = async (req, res) => {
     }
 
     // 3. Special Updates Feature
-    if (lowerQuery.includes('update') || lowerQuery.includes('new') || lowerQuery.includes('feature')) {
+    if (lowerQuery.includes('update') || lowerQuery.includes('new') || lowerQuery.includes('feature') || lowerQuery.includes('latest')) {
         responseText = "I've been updated with new capabilities! Check these out:";
+        results.push({ type: 'text', content: "📊 **Petty Cash Report:** Generate printable daily reports with running balances and owner signature section." });
+        results.push({ type: 'text', content: "🏗️ **Labour Milestones:** Customize 5-stage payment plans for different contract workers (Plumbers, Electricians, Masons)." });
+        results.push({ type: 'text', content: "👥 **Customer View:** Simplified dashboard showing only name, phone, and booked villa. Expand rows for full details." });
         results.push({ type: 'text', content: "🏠 **Villa Stock:** Manage inventory specifically for each villa." });
         results.push({ type: 'text', content: "💰 **Payments:** Link payments to booking milestones." });
-        results.push({ type: 'text', content: "🔄 **Sync:** Booking payments now automatically update Invoices." });
     }
 
     // 4. Final Response Construction

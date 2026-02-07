@@ -1,7 +1,26 @@
 import React from 'react';
-import { Form, Input, InputNumber, Row, Col } from 'antd';
+import { Form, Input, InputNumber, Select, Switch, Row, Col } from 'antd';
+
+import { validatePhoneNumber } from '@/utils/helpers';
 
 export default function SupplierForm({ isUpdateForm = false }) {
+    const supplierTypeOptions = [
+        { value: 'cement', label: 'Cement' },
+        { value: 'aggregate', label: 'Aggregate (Sand, Gravel)' },
+        { value: 'steel', label: 'Steel' },
+        { value: 'rods', label: 'Steel Rods/Bars (TMT)' },
+        { value: 'bricks', label: 'Bricks & Blocks' },
+        { value: 'tiles', label: 'Tiles & Flooring' },
+        { value: 'electrical', label: 'Electrical Items' },
+        { value: 'plumbing', label: 'Plumbing Items' },
+        { value: 'hardware', label: 'Hardware & Tools' },
+        { value: 'paint', label: 'Paint & Coating' },
+        { value: 'wood', label: 'Wood & Timber' },
+        { value: 'glass', label: 'Glass & Glazing' },
+        { value: 'sanitary', label: 'Sanitary Ware' },
+        { value: 'other', label: 'Other' },
+    ];
+
     return (
         <>
             <Row gutter={[24, 24]}>
@@ -20,12 +39,30 @@ export default function SupplierForm({ isUpdateForm = false }) {
                     </Form.Item>
                 </Col>
                 <Col span={12}>
+                    <Form.Item
+                        label="Supplier Type"
+                        name="supplierType"
+                        rules={[{ required: true, message: 'Please select supplier type!' }]}
+                    >
+                        <Select options={supplierTypeOptions} placeholder="Select material type" />
+                    </Form.Item>
+                </Col>
+                <Col span={12}>
                     <Form.Item label="Email" name="email">
                         <Input />
                     </Form.Item>
                 </Col>
                 <Col span={12}>
-                    <Form.Item label="Phone" name="phone">
+                    <Form.Item
+                        label="Phone"
+                        name="phone"
+                        rules={[
+                            {
+                                pattern: validatePhoneNumber,
+                                message: 'Must be a valid 10-digit number',
+                            },
+                        ]}
+                    >
                         <Input />
                     </Form.Item>
                 </Col>
@@ -57,6 +94,16 @@ export default function SupplierForm({ isUpdateForm = false }) {
                 <Col span={12}>
                     <Form.Item label="Website" name="website">
                         <Input />
+                    </Form.Item>
+                </Col>
+                <Col span={12}>
+                    <Form.Item
+                        label="Status"
+                        name="enabled"
+                        valuePropName="checked"
+                        initialValue={true}
+                    >
+                        <Switch checkedChildren="Active" unCheckedChildren="Disabled" />
                     </Form.Item>
                 </Col>
             </Row>

@@ -302,5 +302,21 @@ const request = {
       return errorHandler(error);
     }
   },
+  pdf: async ({ entity, options = {} }) => {
+    try {
+      let query = '?';
+      for (var key in options) {
+        query += key + '=' + options[key] + '&';
+      }
+      query = query.slice(0, -1);
+
+      const response = await axiosInstance.get(entity + query, {
+        responseType: 'blob',
+      });
+      return response;
+    } catch (error) {
+      return errorHandler(error);
+    }
+  },
 };
 export default request;

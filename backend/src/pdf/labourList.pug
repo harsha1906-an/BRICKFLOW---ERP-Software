@@ -1,0 +1,65 @@
+doctype html
+html
+  head
+    link(rel="shortcut icon" type="image/png" href="/images/icons/favicon.png")
+    meta(name="viewport" content="width=device-width, initial-scale=1")
+    style.
+      .sheet { margin: 0; width: 100%; height: 297mm; }
+      body { width: 100%; margin: 0; padding: 0px; background: #ffffff; font-family: sans-serif; font-size:12px; color:#222; }
+      *, *:before, *:after { box-sizing: inherit; color:#222; }
+      .clearfix { display: block; }
+      .left { float:left; }
+      .right { float:right; }
+      .top-area { display: block; width:100%; }
+      .logo { width: 150px; }
+      .company-info { text-align: right; font-size:12px; }
+      h1.report-title { font-size:24px; color:#52008c; margin-top:0; }
+      .table-report { width: 100%; border-collapse: collapse; border-spacing: 0; margin-bottom: 20px; }
+      .table-report tr:nth-child(2n-1) td { background: #fcfeff; }
+      .table-report th { padding: 8px 10px; border-bottom: 1px solid #c2e0f2; color:#52008c; font-weight: 700; font-size: 12px; text-align: left; }
+      .table-report td { padding: 10px; text-align: left; font-size: 11px; }
+      .footer-report { margin-top:30px; color: #5d6975; width: 100%; position: absolute; bottom: 0; padding: 20px 0; text-align: center; }
+
+  body
+    header.clearfix
+      .top-area
+        if logo
+          img.logo.left(src=logo)
+        else
+          h1.logo.left #{settings.company_name}
+        .right.company-info
+          p.strong #{settings.company_name}
+          p #{settings.company_address}
+          p #{settings.company_email}
+      
+      .clearfix(style="margin-top: 20px; margin-bottom: 20px;")
+        h1.report-title Labour List Report
+        p
+          strong Generated Date: 
+          | #{moment().format(dateFormat)}
+
+    main
+      table.table-report
+        thead
+          tr
+            th Name
+            th Skill / Type
+            th Employment
+            th Phone
+            th Rate / Salary
+            th Status
+        tbody
+          each item in model
+            tr
+              td #{item.name} #{item.isSubstitute ? '(Sub)' : ''}
+              td #{item.skill}
+              td #{item.employmentType ? item.employmentType.charAt(0).toUpperCase() + item.employmentType.slice(1) : 'Daily'}
+              td #{item.phone}
+              if item.employmentType == 'monthly'
+                td #{moneyFormatter({ amount: item.monthlySalary })} / mo
+              else
+                td #{moneyFormatter({ amount: item.dailyWage })} / day
+              td #{item.isActive ? 'Active' : 'Inactive'}
+
+    footer.footer-report
+      | Report generated on #{moment().format(dateFormat)}

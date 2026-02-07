@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, DatePicker, Row, Col, Statistic, Spin, message, Button, Space, Table, Tag } from 'antd';
-import { ArrowLeftOutlined, ReloadOutlined, WalletOutlined, BuildOutlined, UserOutlined, DownloadOutlined, EuroOutlined } from '@ant-design/icons';
+import { Card, DatePicker, Row, Col, Statistic, Spin, message, Button, Space, Table, Tag, Divider, Modal, Progress } from 'antd';
+import { ArrowLeftOutlined, ReloadOutlined, WalletOutlined, BuildOutlined, UserOutlined, DownloadOutlined, EuroOutlined, DollarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { request } from '@/request';
 import { useAppContext } from '@/context/appContext';
@@ -32,31 +32,60 @@ const DailyReport = () => {
         setLoading(false);
     };
 
-    const handleDownload = () => {
+    const [downloading, setDownloading] = useState(false);
+    const [progress, setProgress] = useState(0);
+
+    const handleDownload = async () => {
         if (!summary) return;
 
-        const headers = ['Date', 'Labour Wages', 'Petty Cash', 'Inventory Inward', 'Inventory Outward', 'Customer Collections', 'Total Daily Cost'];
-        const row = [
-            summary.date,
-            summary.labour.netWage,
-            summary.pettyCash?.expense || 0,
-            summary.inventory.inward,
-            summary.inventory.outward,
-            summary.customerCollections,
-            summary.totalDailyExpense
-        ];
+        setDownloading(true);
+        setProgress(0);
 
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + headers.join(",") + "\n"
-            + row.join(",");
+        // Fake progress up to 99%
+        const timer = setInterval(() => {
+            setProgress((prev) => {
+                if (prev >= 99) {
+                    clearInterval(timer);
+                    return 99;
+                }
+                const increment = prev < 60 ? 10 : prev < 90 ? 5 : 1;
+                return prev + increment;
+            });
+        }, 100);
 
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `daily_summary_${summary.date}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+            const dateStr = date.format('YYYY-MM-DD');
+            const response = await request.pdf({
+                entity: `companies/${companyId}/daily-report-pdf?date=${dateStr}`,
+            });
+
+            // Download complete
+            clearInterval(timer);
+            setProgress(100);
+
+            // Handle direct blob response headers
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `DailyReport_${dateStr}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            // Close modal after short delay
+            setTimeout(() => {
+                setDownloading(false);
+                setProgress(0);
+            }, 1000);
+
+        } catch (error) {
+            console.error('Download failed:', error);
+            clearInterval(timer);
+            setDownloading(false);
+            messageApi.error('Failed to download PDF report');
+        }
     };
 
     return (
@@ -65,7 +94,7 @@ const DailyReport = () => {
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Space>
-                        <h2 style={{ margin: 0 }}>Daily Expense Summary</h2>
+                        <h2 style={{ margin: 0 }}>Daily Summary</h2>
                     </Space>
                     <Space>
                         <DatePicker value={date} onChange={setDate} allowClear={false} />
@@ -79,7 +108,7 @@ const DailyReport = () => {
                 ) : summary ? (
                     <>
                         <Row gutter={[16, 16]}>
-                            <Col span={6}>
+                            <Col span={8}>
                                 <Card bordered={true}>
                                     <Statistic
                                         title="Labour Wages (Net)"
@@ -93,7 +122,7 @@ const DailyReport = () => {
                                     </div>
                                 </Card>
                             </Col>
-                            <Col span={6}>
+                            <Col span={8}>
                                 <Card bordered={true}>
                                     <Statistic
                                         title="Petty Cash Expenses"
@@ -107,7 +136,7 @@ const DailyReport = () => {
                                     </div>
                                 </Card>
                             </Col>
-                            <Col span={6}>
+                            <Col span={8}>
                                 <Card bordered={true}>
                                     <Statistic
                                         title="Customer Collections"
@@ -116,18 +145,6 @@ const DailyReport = () => {
                                         prefix={<BuildOutlined />}
                                         suffix={currency_symbol}
                                         valueStyle={{ color: '#3f8600' }}
-                                    />
-                                </Card>
-                            </Col>
-                            <Col span={6}>
-                                <Card bordered={true}>
-                                    <Statistic
-                                        title="Total Daily Cost"
-                                        value={summary.totalDailyExpense}
-                                        precision={2}
-                                        prefix={<WalletOutlined />}
-                                        suffix={currency_symbol}
-                                        valueStyle={{ color: '#cf1322' }}
                                     />
                                 </Card>
                             </Col>
@@ -147,6 +164,26 @@ const DailyReport = () => {
                                     </div>
                                 </Col>
                                 <Col span={12}>
+                                    <h4>Expense Breakdown</h4>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                        <span>Supplier Payments:</span>
+                                        <b style={{ color: 'red' }}>-{moneyFormatter({ amount: summary.expenses?.supplier || 0 })}</b>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                        <span>Labour Contracts:</span>
+                                        <b style={{ color: 'red' }}>-{moneyFormatter({ amount: summary.expenses?.labourContract || 0 })}</b>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                        <span>Other Expenses:</span>
+                                        <b style={{ color: 'red' }}>-{moneyFormatter({ amount: summary.expenses?.other || 0 })}</b>
+                                    </div>
+                                    <Divider style={{ margin: '8px 0' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>Total (Non-Wage):</span>
+                                        <b style={{ color: 'red' }}>-{moneyFormatter({ amount: summary.expenses?.amount || 0 })}</b>
+                                    </div>
+                                </Col>
+                                <Col span={12}>
                                     <h4>Inventory Activity</h4>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                         <span>Materials Received (In):</span>
@@ -162,6 +199,19 @@ const DailyReport = () => {
                     </>
                 ) : null}
             </Space>
+            <Modal
+                title="Generating Report"
+                open={downloading}
+                footer={null}
+                closable={false}
+                centered
+            >
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <p>Please wait while we generate your PDF report...</p>
+                    <Progress type="circle" percent={progress} status={progress === 100 ? "success" : "active"} />
+                    <div style={{ marginTop: 10 }}>{progress === 100 ? "Download Complete!" : "Processing..."}</div>
+                </div>
+            </Modal>
         </Card>
     );
 };

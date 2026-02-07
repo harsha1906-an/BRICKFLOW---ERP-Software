@@ -42,8 +42,11 @@ export default function UpdateForm({ config, formElements, withUpload = false })
     // }, {});
     dispatch(crud.update({ entity, id, jsonData: fieldsValue, withUpload }));
   };
+  const persistenceKey = current?._id ? `erp_form_${entity}_update_${current._id}` : null;
+
   useEffect(() => {
     if (current) {
+      // ... existing initialization logic ...
       let newValues = { ...current };
       if (newValues.birthday) {
         newValues = {
@@ -77,11 +80,25 @@ export default function UpdateForm({ config, formElements, withUpload = false })
       }
       form.resetFields();
       form.setFieldsValue(newValues);
+
+      // Restore persisted data on top of current data
+      if (persistenceKey) {
+        const savedData = window.sessionStorage.getItem(persistenceKey);
+        if (savedData) {
+          try {
+            const parsed = JSON.parse(savedData);
+            form.setFieldsValue(parsed);
+          } catch (e) {
+            console.error('Failed to parse saved update form state', e);
+          }
+        }
+      }
     }
-  }, [current]);
+  }, [current, persistenceKey]);
 
   useEffect(() => {
     if (isSuccess) {
+      if (persistenceKey) window.sessionStorage.removeItem(persistenceKey);
       readBox.open();
       collapsedBox.open();
       panel.open();
@@ -91,13 +108,19 @@ export default function UpdateForm({ config, formElements, withUpload = false })
     }
   }, [isSuccess]);
 
+  const handleValuesChange = (_, allValues) => {
+    if (persistenceKey) {
+      window.sessionStorage.setItem(persistenceKey, JSON.stringify(allValues));
+    }
+  };
+
   const { isEditBoxOpen } = state;
 
   const show = isEditBoxOpen ? { display: 'block', opacity: 1 } : { display: 'none', opacity: 0 };
   return (
     <div style={show}>
       <Loading isLoading={isLoading}>
-        <Form form={form} layout="vertical" onFinish={onSubmit}>
+        <Form form={form} layout="vertical" onFinish={onSubmit} onValuesChange={handleValuesChange}>
           {formElements}
           <Form.Item
             style={{

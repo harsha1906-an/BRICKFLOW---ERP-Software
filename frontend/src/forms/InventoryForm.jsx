@@ -1,7 +1,8 @@
-import React from 'react';
 import { Form, Input, InputNumber } from 'antd';
+import useMoney from '@/settings/useMoney';
 
 export default function InventoryForm() {
+  const { currency_symbol } = useMoney();
   // Renamed to InventoryForm for clarity
   return (
     <>
@@ -46,8 +47,8 @@ export default function InventoryForm() {
         ]}
       >
         <InputNumber
-          formatter={(value) => `$ ${value}`} // Optional: format value as currency
-          parser={(value) => value.replace(/\$\s?|(,*)/g, '')} // Optional: parse input as number
+          formatter={(value) => (value ? `${currency_symbol} ${value}` : '').replace(/\B(?=(?:\d{2})+(?!\d)(?:\d{3})?)/g, ',')}
+          parser={(value) => value.replace(new RegExp(`\\${currency_symbol}\\s?|(,*)`, 'g'), '')}
         />
       </Form.Item>
     </>

@@ -54,6 +54,8 @@ const create = async (req, res) => {
             plan.status = 'partially';
           }
           plan.paymentDate = new Date();
+          plan.transactionId = req.body.ref;
+          plan.paymentMode = req.body.paymentMode;
 
           // Update the array item
           currentBooking.paymentPlan[planIndex] = plan;

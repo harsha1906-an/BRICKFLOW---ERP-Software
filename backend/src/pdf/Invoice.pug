@@ -246,12 +246,9 @@ html
         
       }
       .footer-invoice {
-        margin-top:30px
+        margin-top: 80px;
         color: #5d6975;
         width: 100%;
-        position: absolute;
-        bottom: 0;
-        
         padding: 20px 0;
         text-align: center;
       }
@@ -281,6 +278,10 @@ html
               .col.col-8 
                 p.strong #{translate('Number')} :
                 p # #{model.number}/#{model.year || ""} 
+            if model.reference
+              .col.col-24(style="margin-top:10px")
+                p.strong #{translate('Reference')} :
+                p #{model.reference}
               
         .right.col-10
             .billTo
@@ -320,6 +321,10 @@ html
       .col.col-24
           .space     
       footer.footer-invoice
+        .clearfix(style="padding: 0 50px;")
+          .right(style="width: 200px; text-align: center; border-top: 1px solid #222; padding-top: 10px;")
+            p.strong(style="margin-bottom: 5px;") #{translate('Digital Signature')}
+            p(style="font-size: 10px; color: #666; margin: 0;") #{translate('Authorized Signatory')}
         //- | Invoice was created on a computer and is valid without the signature and seal.
           
 

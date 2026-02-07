@@ -142,6 +142,129 @@ const summary = async (req, res) => {
     return res.status(200).json({ success: true, result: [] });
 }
 
+const progressSummary = async (req, res) => {
+    try {
+        const mongoose = require('mongoose');
+        const { companyId } = req.query;
+
+        if (!companyId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Company ID is required'
+            });
+        }
+
+        console.log('\n=== BACKEND PROGRESS SUMMARY ===');
+        console.log('CompanyId received:', companyId);
+
+        const LabourContract = mongoose.model('LabourContract');
+
+        // Get all villas for the company
+        console.log('Querying villas...');
+        const villas = await Villa.find({ companyId, removed: false })
+            .select('name villaNumber projectId')
+            .populate('projectId', 'name')
+            .sort({ villaNumber: 1 });
+
+        console.log('Found villas:', villas.length);
+        console.log('Sample:', villas.slice(0, 2));
+
+        // Calculate progress for each villa based on labour contract milestones
+        const villasWithProgress = await Promise.all(villas.map(async (villa) => {
+            // Find all labour contracts for this villa
+            const contracts = await LabourContract.find({
+                companyId,
+                villa: villa._id,
+                removed: false
+            }).populate('labour', 'name skill');
+
+            if (!contracts || contracts.length === 0) {
+                // No contracts = Not Started
+                return {
+                    _id: villa._id,
+                    name: villa.name,
+                    villaNumber: villa.villaNumber,
+                    project: villa.projectId,
+                    stage: 'Not Started',
+                    percentage: 0,
+                    lastUpdated: null,
+                    totalContracts: 0,
+                    completedMilestones: 0,
+                    totalMilestones: 0
+                };
+            }
+
+            // Calculate completion based on milestones
+            let totalMilestones = 0;
+            let completedMilestones = 0;
+            let lastCompletionDate = null;
+            let currentStage = 'Not Started';
+
+            contracts.forEach(contract => {
+                if (contract.milestones && contract.milestones.length > 0) {
+                    totalMilestones += contract.milestones.length;
+                    contract.milestones.forEach(milestone => {
+                        if (milestone.isCompleted) {
+                            completedMilestones++;
+                            // Track latest completion date
+                            if (milestone.completionDate) {
+                                if (!lastCompletionDate || new Date(milestone.completionDate) > new Date(lastCompletionDate)) {
+                                    lastCompletionDate = milestone.completionDate;
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Calculate percentage
+            const percentage = totalMilestones > 0
+                ? Math.round((completedMilestones / totalMilestones) * 100)
+                : 0;
+
+            // Determine stage based on percentage
+            if (percentage === 0) {
+                currentStage = 'Not Started';
+            } else if (percentage < 25) {
+                currentStage = 'foundation';
+            } else if (percentage < 50) {
+                currentStage = 'structure';
+            } else if (percentage < 75) {
+                currentStage = 'plastering';
+            } else if (percentage < 100) {
+                currentStage = 'finishing';
+            } else {
+                currentStage = 'finishing'; // Completed
+            }
+
+            return {
+                _id: villa._id,
+                name: villa.name,
+                villaNumber: villa.villaNumber,
+                project: villa.projectId,
+                stage: currentStage,
+                percentage: percentage,
+                lastUpdated: lastCompletionDate,
+                totalContracts: contracts.length,
+                completedMilestones: completedMilestones,
+                totalMilestones: totalMilestones
+            };
+        }));
+
+        return res.status(200).json({
+            success: true,
+            result: villasWithProgress
+        });
+    } catch (error) {
+        console.error('Progress Summary Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch villa progress',
+            error: error.message
+        });
+    }
+}
+
 module.exports = {
     create,
     list,
@@ -151,5 +274,6 @@ module.exports = {
     search,
     filter,
     listAll,
-    summary
+    summary,
+    progressSummary
 };

@@ -283,6 +283,13 @@ html
               .col.col-9 
                 p.strong #{translate('Reciept Number')}:
                 p # #{model.number}/#{model.year || ""} 
+              .col.col-24
+                p.strong #{translate('Payment Mode')}:
+                p #{model.paymentMode}
+              if model.ref
+                .col.col-24
+                  p.strong #{translate('Transaction ID')}:
+                  p #{model.ref}
               
         .right.col-10
             .billTo

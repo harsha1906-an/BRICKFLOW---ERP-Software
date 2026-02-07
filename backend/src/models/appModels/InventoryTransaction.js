@@ -36,6 +36,18 @@ const schema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    ratePerUnit: {
+        type: Number,
+        default: 0,
+    },
+    remainingQuantity: {
+        type: Number,
+        default: 0,
+    },
+    totalCost: {
+        type: Number,
+        default: 0,
+    },
     date: {
         type: Date,
         default: Date.now,
@@ -44,8 +56,14 @@ const schema = new mongoose.Schema({
     reference: {
         type: String, // PO Number, Receiver Name, Usage Location, etc.
     },
+    vehicleNumber: {
+        type: String,
+    },
     notes: {
         type: String,
+    },
+    issuedBy: {
+        type: String, // Name of person who issued the item
     },
     performedBy: {
         type: mongoose.Schema.ObjectId,
@@ -54,6 +72,10 @@ const schema = new mongoose.Schema({
     created: {
         type: Date,
         default: Date.now,
+    },
+    removed: {
+        type: Boolean,
+        default: false,
     },
 });
 

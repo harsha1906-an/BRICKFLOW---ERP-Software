@@ -8,7 +8,7 @@ const villaSchema = new mongoose.Schema({
     companyId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Company',
-        required: true,
+        required: false,
         index: true
     },
     projectId: {
@@ -23,8 +23,35 @@ const villaSchema = new mongoose.Schema({
     houseType: {
         type: String,
     },
+    landArea: {
+        type: Number,
+    },
+    groundFloorArea: {
+        type: Number,
+    },
+    firstFloorArea: {
+        type: Number,
+    },
+    secondFloorArea: {
+        type: Number,
+    },
     builtUpArea: {
         type: Number,
+    },
+    facing: {
+        type: String,
+    },
+    accountableAmount: {
+        type: Number,
+        default: 0,
+    },
+    nonAccountableAmount: {
+        type: Number,
+        default: 0,
+    },
+    totalAmount: {
+        type: Number,
+        default: 0,
     },
     status: {
         type: String,

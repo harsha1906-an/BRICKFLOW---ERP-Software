@@ -14,10 +14,28 @@ const schema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  phone: String,
+  phone: {
+    type: String,
+    validate: {
+      validator: function (v) {
+        return !v || /^[0-9]{10}$/.test(v);
+      },
+      message: (props) => `${props.value} is not a valid 10-digit phone number!`,
+    },
+  },
   country: String,
   address: String,
   email: String,
+  customerId: String,
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other'],
+  },
+  fatherName: String,
+  dob: Date,
+  aadharCardNumber: String,
+  panCardNumber: String,
+  drivingLicence: String,
   createdBy: { type: mongoose.Schema.ObjectId, ref: 'Admin' },
   assigned: { type: mongoose.Schema.ObjectId, ref: 'Admin' },
   created: {

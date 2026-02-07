@@ -9,6 +9,7 @@ import SelectAsync from '@/components/SelectAsync';
 import { generate as uniqueId } from 'shortid';
 
 import { countryList } from '@/utils/countryList';
+import AadharInput from '@/components/AadharInput';
 
 export default function DynamicForm({ fields, isUpdateForm = false }) {
   const [feedback, setFeedback] = useState();
@@ -336,8 +337,11 @@ function FormElement({ field, feedback, setFeedback }) {
         controls={false}
         addonAfter={money.currency_position === 'after' ? money.currency_symbol : undefined}
         addonBefore={money.currency_position === 'before' ? money.currency_symbol : undefined}
+        formatter={money.inputFormatter}
+        parser={money.inputParser}
       />
     ),
+    aadhar: <AadharInput autoComplete="off" />,
   };
 
   const filedType = {

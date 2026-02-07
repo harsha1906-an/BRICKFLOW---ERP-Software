@@ -1,10 +1,11 @@
-import React from 'react';
 import { Form, Input, Select, InputNumber } from 'antd';
+import useMoney from '@/settings/useMoney';
 
 import useLanguage from '@/locale/useLanguage';
 
 export default function OrderForm({ isUpdateForm = false }) {
   const translate = useLanguage();
+  const { currency_symbol } = useMoney();
   const validateEmptyString = (_, value) => {
     if (value && value.trim() === '') {
       return Promise.reject(new Error('Field cannot be empty'));
@@ -66,7 +67,7 @@ export default function OrderForm({ isUpdateForm = false }) {
           },
         ]}
       >
-        <InputNumber min={0} precision={2} prefix="$" style={{ width: '100%' }} />
+        <InputNumber min={0} precision={2} prefix={currency_symbol} style={{ width: '100%' }} />
       </Form.Item>
 
       <Form.Item

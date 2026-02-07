@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const LabourSchema = new mongoose.Schema({
+    removed: {
+        type: Boolean,
+        default: false,
+    },
     companyId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Company',
@@ -43,7 +47,31 @@ const LabourSchema = new mongoose.Schema({
     },
     phone: {
         type: String,
+        default: '',
+        validate: {
+            validator: function (v) {
+                return !v || /^[0-9]{10}$/.test(v);
+            },
+            message: (props) => `${props.value} is not a valid 10-digit phone number!`,
+        },
+    },
+    customSkill: {
+        type: String,
         default: ''
+    },
+    notes: {
+        type: String,
+        default: ''
+    },
+    milestonePlan: {
+        type: [String],
+        default: [
+            'Basement Level',
+            'Slab Completion',
+            'Brick Work',
+            'Plastering',
+            'Finishing'
+        ]
     },
     createdAt: {
         type: Date,

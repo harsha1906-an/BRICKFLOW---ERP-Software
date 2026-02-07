@@ -191,15 +191,20 @@ export default function PaymentForm({ maxAmount = null, isUpdateForm = false }) 
       >
         {({ getFieldValue }) => {
           const paymentMode = getFieldValue('paymentMode');
-          return paymentMode && paymentMode !== 'Cash' ? (
+          return (
             <Form.Item
               label={translate('Transaction ID')}
               name="ref"
-              rules={[{ required: true, message: 'Transaction ID is required' }]}
+              rules={[
+                {
+                  required: paymentMode && paymentMode !== 'Cash',
+                  message: 'Transaction ID is required'
+                }
+              ]}
             >
-              <Input />
+              <Input placeholder="Transaction ID / Reference Number" />
             </Form.Item>
-          ) : null;
+          );
         }}
       </Form.Item>
       <Form.Item label={translate('Description')} name="description">

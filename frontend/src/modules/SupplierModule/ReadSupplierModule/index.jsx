@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { erp } from '@/redux/erp/actions';
 import { selectReadItem } from '@/redux/erp/selectors';
 import ReadItem from '@/modules/ErpPanelModule/ReadItem';
+import SupplierDetails from '../SupplierDetails';
 import SupplierForm from '@/forms/SupplierForm';
 import { ErpLayout } from '@/layout';
 import PageLoader from '@/components/PageLoader';
@@ -30,7 +31,7 @@ export default function ReadSupplierModule({ config }) {
     return (
         <ErpLayout>
             {isSuccess ? (
-                <ReadItem config={config} selectedItem={currentResult} ReadForm={SupplierForm} />
+                <SupplierDetails item={currentResult} config={config} />
             ) : (
                 <NotFound entity={config.entity} />
             )}

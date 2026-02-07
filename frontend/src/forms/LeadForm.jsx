@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Form, Input, Select, Divider } from 'antd';
 
+import { validatePhoneNumber } from '@/utils/helpers';
+
 export default function LeadForm({ isUpdateForm = false }) {
   const [status, setStatus] = useState('New');
 
@@ -30,9 +32,13 @@ export default function LeadForm({ isUpdateForm = false }) {
             required: true,
             message: 'Please enter phone number',
           },
+          {
+            pattern: validatePhoneNumber,
+            message: 'Must be a valid 10-digit number',
+          },
         ]}
       >
-        <Input placeholder="+91 9876543210" />
+        <Input placeholder="9876543210" />
       </Form.Item>
       <Form.Item
         name="email"

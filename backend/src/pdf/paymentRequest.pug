@@ -1,0 +1,190 @@
+doctype html
+html
+  head
+    link(rel="shortcut icon" type="image/png" href="/images/icons/favicon.png")
+    meta(name="viewport" content="width=device-width, initial-scale=1")
+    style.
+      .sheet {
+        margin: 0;
+        width: 100%; 
+        height: 297mm;
+      }
+
+      body{
+        width: 100%; 
+        margin: 0;
+        padding: 0px ;
+        background: #ffffff;
+        font-family: sans-serif;
+        font-size:12px;
+        color:#222
+      }
+      *, *:before, *:after {
+        box-sizing: inherit;
+        color:#222
+      }
+
+      .clearfix {
+        display: block; }
+      .left{
+        float:left;
+      }
+      .right{
+        float:right;
+      }
+      .top-area {    
+        display: block;
+        width:100%;
+        
+      }
+      .logo {
+        width: 150px;
+      }
+      .company-info{
+        text-align: right;
+        font-size:12px;
+      }
+      h1.invoice{
+        font-size:32px;
+        color:#52008c;
+        margin-top:0;
+      }
+      p.strong{
+        font-weight:700;
+      }
+      .billTo p {
+        text-align: right !important;
+        float:right;
+        display:block;
+        font-size:12px;
+        width:100%;
+        margin-top:0;
+        margin-bottom:10px;
+      }
+
+      .tableHeader{
+        color:#52008c;
+      }
+      .col {
+        float:left;
+      }
+      .col-24 {
+        width: 100%; }
+      .col-14 {
+        width: 58.33333%; }
+      .col-10 {
+        width: 41.66667%; }
+      .col-7 { width: 30%; }
+      .col-9 { width: 40%; }
+      .col-8 { width: 30%; }
+
+      .space {
+        margin-top: 30px;
+        margin-bottom: 40px;
+        width:100%;
+      }
+      
+      .table-invoice {
+        width: 100%;
+        border-collapse: collapse;
+        border-spacing: 0;
+        margin-bottom: 20px;
+      }
+      .table-invoice tr:nth-child(2n-1) td {
+        background: #fcfeff;
+      }
+      .table-invoice th, .table-invoice td {
+        text-align: center;
+      }
+      .table-invoice th {
+        padding: 8px 10px;
+        border-bottom: 1px solid #c2e0f2;
+        color:#52008c;
+        white-space: nowrap;
+        font-weight: 700;
+        font-size: 12px;
+        text-align: right;
+      }
+      tbody{
+        border-bottom: 1px solid #c2e0f2;
+      }
+      .table-invoice .service {
+        text-align: left;
+      }
+      .table-invoice td {
+        padding: 10px ;
+        text-align: right;
+        font-size: 11px;
+      }
+      .footer-invoice {
+        margin-top: 80px;
+        color: #5d6975;
+        width: 100%;
+        padding: 20px 0;
+        text-align: center;
+      }
+ 
+  body
+    header.clearfix
+      .top-area
+        img.logo.left(src=settings.public_server_file+settings.company_logo)
+        .right.company-info
+            p.strong #{settings.company_name}
+            p #{settings.company_address}
+            p #{settings.company_reg_number}
+            
+      .col.col-24
+        .space  
+      .left.col-14
+          h1.invoice
+            | #{translate('Payment Request')}
+          div 
+            .col.col-24
+              p.strong #{translate('Booking ID')} :
+              p #{model._id}
+            .col.col-24(style="margin-top:10px")
+              p.strong #{translate('Date')} :
+              p #{moment().format(dateFormat)}
+
+      .right.col-10
+          .billTo
+              p #{translate('Client')} :
+              p #{model.client.name}
+              p #{model.client.address}
+              p #{model.client.phone}
+              p #{model.client.email}
+      .col.col-24
+        .space  
+    main
+      p(style="font-size: 14px; margin-bottom: 20px;")
+        | This is a formal request for payment regarding the construction milestone reached for 
+        strong Villa #{model.villa.villaNumber}
+        |.
+
+      table.table-invoice
+        thead
+          tr.tableHeader
+            th.service #{translate('Milestone Description')}
+            th #{translate('Amount Due')}
+        tbody
+          tr
+            td.service(style="font-size: 14px;") 
+              strong #{model.requestedMilestone.name}
+              if model.requestedMilestone.dueDate
+                span(style="display:block; font-size: 11px; color: #666;") Due Date: #{moment(model.requestedMilestone.dueDate).format(dateFormat)}
+            td.total(style="font-size: 16px; font-weight: 700;") #{moneyFormatter({amount:model.requestedMilestone.amount})}
+      
+      div(style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 4px;")
+        p.strong(style="margin-bottom: 10px;") Payment Instructions:
+        p Please initiate the payment through bank transfer or cash as per the terms of the booking agreement.
+        p Mention the Booking ID: 
+          strong #{model._id} 
+          | in your payment reference.
+
+    .col.col-24
+        .space     
+    footer.footer-invoice
+      .clearfix(style="padding: 0 50px;")
+        .right(style="width: 200px; text-align: center; border-top: 1px solid #222; padding-top: 10px;")
+          p.strong(style="margin-bottom: 5px;") #{translate('Authorized Signatory')}
+          p(style="font-size: 10px; color: #666; margin: 0;") #{settings.company_name}

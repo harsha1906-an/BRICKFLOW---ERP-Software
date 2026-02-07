@@ -259,6 +259,19 @@ export default function ReadItem({ config, selectedItem, ReadForm }) {
             <Descriptions.Item label={translate('Address')}>{client?.address || ''}</Descriptions.Item>
             <Descriptions.Item label={translate('email')}>{client?.email || ''}</Descriptions.Item>
             <Descriptions.Item label={translate('Phone')}>{client?.phone || ''}</Descriptions.Item>
+            {currentErp?.reference && (
+              <Descriptions.Item label={translate('Reference')}>{currentErp.reference}</Descriptions.Item>
+            )}
+            {currentErp?.villa && (
+              <Descriptions.Item label={translate('Villa')}>{currentErp.villa.villaNumber}</Descriptions.Item>
+            )}
+            {entity.toLowerCase() === 'payment' && currentErp?.ledger && (
+              <Descriptions.Item label={translate('Account')}>
+                <Tag color={currentErp.ledger === 'internal' ? 'volcano' : 'blue'}>
+                  {currentErp.ledger === 'internal' ? 'Internal (Black)' : 'Official (White)'}
+                </Tag>
+              </Descriptions.Item>
+            )}
           </Descriptions>
           <Divider />
           <Row gutter={[12, 0]}>

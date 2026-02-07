@@ -63,6 +63,9 @@ export default function UpdateItem({ config, UpdateForm }) {
   const { id } = useParams();
 
   const handelValuesChange = (changedValues, values) => {
+    if (persistenceKey) {
+      window.sessionStorage.setItem(persistenceKey, JSON.stringify(values));
+    }
     const items = values['items'];
     let subTotal = 0;
 
@@ -102,14 +105,7 @@ export default function UpdateItem({ config, UpdateForm }) {
 
     dispatch(erp.update({ entity, id, jsonData: dataToUpdate }));
   };
-  useEffect(() => {
-    if (isSuccess) {
-      form.resetFields();
-      setSubTotal(0);
-      dispatch(erp.resetAction({ actionType: 'update' }));
-      navigate(`/${entity.toLowerCase()}/read/${id}`);
-    }
-  }, [isSuccess]);
+  const persistenceKey = id ? `erp_form_${config.entity}_update_item_${id}` : null;
 
   useEffect(() => {
     if (current) {
@@ -130,8 +126,37 @@ export default function UpdateItem({ config, UpdateForm }) {
       form.resetFields();
       form.setFieldsValue(formData);
       setSubTotal(subTotal);
+
+      // Restore persisted data on top of current data
+      if (persistenceKey) {
+        const savedData = window.sessionStorage.getItem(persistenceKey);
+        if (savedData) {
+          try {
+            const parsed = JSON.parse(savedData);
+            // Handle date objects for dayjs
+            if (parsed.date) parsed.date = dayjs(parsed.date);
+            if (parsed.expiredDate) parsed.expiredDate = dayjs(parsed.expiredDate);
+
+            form.setFieldsValue(parsed);
+            // Recalculate totals from saved data
+            handelValuesChange(null, parsed);
+          } catch (e) {
+            console.error('Failed to parse saved update item state', e);
+          }
+        }
+      }
     }
-  }, [current]);
+  }, [current, persistenceKey]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      form.resetFields();
+      setSubTotal(0);
+      if (persistenceKey) window.sessionStorage.removeItem(persistenceKey);
+      dispatch(erp.resetAction({ actionType: 'update' }));
+      navigate(`/${entity.toLowerCase()}/read/${id}`);
+    }
+  }, [isSuccess]);
 
   return (
     <>

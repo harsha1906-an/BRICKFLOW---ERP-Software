@@ -22,6 +22,7 @@ const attendanceApiRouter = require('./routes/appRoutes/attendanceApi');
 const reportingApiRouter = require('./routes/appRoutes/reportingApi');
 const bookingApiRouter = require('./routes/appRoutes/bookingApi');
 const chatApiRouter = require('./routes/appRoutes/chatRoutes');
+const analyticsApiRouter = require('./routes/appRoutes/analyticsApi');
 
 const fileUpload = require('express-fileupload');
 // create our Express app
@@ -55,6 +56,7 @@ app.use('/api', adminAuth.isValidAuthToken, attendanceApiRouter);
 app.use('/api', adminAuth.isValidAuthToken, reportingApiRouter);
 app.use('/api', adminAuth.isValidAuthToken, bookingApiRouter);
 app.use('/api/chat', adminAuth.isValidAuthToken, chatApiRouter);
+app.use('/api/analytics', adminAuth.isValidAuthToken, analyticsApiRouter);
 app.use('/download', coreDownloadRouter);
 app.use('/public', corePublicRouter);
 

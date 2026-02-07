@@ -4,9 +4,11 @@ const moment = require('moment');
 const generateDailySummary = async (companyId, date = new Date()) => {
     const Attendance = mongoose.model('Attendance');
     const InventoryTransaction = mongoose.model('InventoryTransaction');
+    const Expense = mongoose.model('Expense');
 
-    const startOfDay = moment(date).startOf('day').toDate();
-    const endOfDay = moment(date).endOf('day').toDate();
+    // Fix: Use IST Timezone
+    const startOfDay = moment(date).utcOffset('+05:30').startOf('day').toDate();
+    const endOfDay = moment(date).utcOffset('+05:30').endOf('day').toDate();
 
     const filter = {
         companyId,
@@ -30,7 +32,9 @@ const generateDailySummary = async (companyId, date = new Date()) => {
     // 3. Customer Collections (Stage-wise)
     const Payment = mongoose.model('Payment');
     const collections = await Payment.find({
-        date: { $gte: startOfDay, $lte: endOfDay }
+        date: { $gte: startOfDay, $lte: endOfDay },
+        removed: false,
+        amount: { $gt: 0 }
     });
     const totalCollections = collections.reduce((sum, p) => sum + (p.amount || 0), 0);
 
@@ -42,8 +46,20 @@ const generateDailySummary = async (companyId, date = new Date()) => {
     });
     const totalPettyCash = pettyCash.reduce((sum, p) => sum + (p.amount || 0), 0);
 
+    // 5. New Expenses Module (Breakdown)
+    const expenses = await Expense.find({
+        date: { $gte: startOfDay, $lte: endOfDay },
+        removed: false
+    });
+
+    // Categorize Main Expenses
+    const supplierExpenses = expenses.filter(e => e.recipientType === 'Supplier').reduce((sum, e) => sum + e.amount, 0);
+    const labourExpenses = expenses.filter(e => e.recipientType === 'Labour').reduce((sum, e) => sum + e.amount, 0);
+    const otherExpenses = expenses.filter(e => e.recipientType === 'Other').reduce((sum, e) => sum + e.amount, 0);
+    const totalMainExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
     return {
-        date: moment(date).format('DD MMM YYYY'),
+        date: moment(date).utcOffset('+05:30').format('DD MMM YYYY'),
         labour: {
             netWage: totalWage,
             advances: totalAdvance,
@@ -58,9 +74,124 @@ const generateDailySummary = async (companyId, date = new Date()) => {
             expense: totalPettyCash,
             count: pettyCash.length
         },
+        expenses: {
+            amount: totalMainExpenses,
+            supplier: supplierExpenses,
+            labourContract: labourExpenses,
+            other: otherExpenses,
+            count: expenses.length
+        },
         customerCollections: totalCollections,
-        totalDailyExpense: totalWage + totalPettyCash
+        totalDailyExpense: totalWage + totalPettyCash + totalMainExpenses
     };
 };
 
-module.exports = { generateDailySummary };
+// Helper to gather detailed data for PDF
+const getDailyReportData = async (companyId, date = new Date()) => {
+    const Expense = mongoose.model('Expense');
+    const PettyCashTransaction = mongoose.model('PettyCashTransaction');
+    const Attendance = mongoose.model('Attendance'); // If we want to include wage rows
+
+    // Fix: Use IST Timezone
+    const startOfDay = moment(date).utcOffset('+05:30').startOf('day').toDate();
+    const endOfDay = moment(date).utcOffset('+05:30').endOf('day').toDate();
+    const dateStr = moment(date).utcOffset('+05:30').format('DD/MM/YYYY');
+
+    const items = [];
+
+    // 1. Fetch Expenses (Detailed)
+    const expenses = await Expense.find({
+        date: { $gte: startOfDay, $lte: endOfDay },
+        removed: false
+    }).populate('supplier labour');
+
+    for (const exp of expenses) {
+        let payee = 'N/A';
+        if (exp.recipientType === 'Supplier' && exp.supplier) payee = exp.supplier.name;
+        else if (exp.recipientType === 'Labour' && exp.labour) payee = exp.labour.name;
+        else if (exp.recipientType === 'Other') payee = exp.otherRecipient || 'Other';
+
+        items.push({
+            type: 'expense',
+            category: exp.recipientType,
+            payee: payee,
+            description: exp.description || exp.ref || '-',
+            amount: exp.amount,
+            color: '#ffebee' // Red tint
+        });
+    }
+
+    // 2. Fetch Petty Cash (Expense)
+    const pettyCash = await PettyCashTransaction.find({
+        date: { $gte: startOfDay, $lte: endOfDay },
+        type: 'outward',
+        removed: false
+    });
+
+    for (const pc of pettyCash) {
+        items.push({
+            type: 'expense',
+            category: 'Petty Cash',
+            payee: 'Cash',
+            description: pc.description || '-',
+            amount: pc.amount,
+            color: '#ffebee'
+        });
+    }
+
+    // 3. Labour Wages (Expense)
+    const attendance = await Attendance.find({
+        companyId,
+        date: { $gte: startOfDay, $lte: endOfDay }
+    });
+    const totalWage = attendance.reduce((sum, a) => sum + (a.wage || 0), 0);
+    const count = attendance.length;
+
+    if (totalWage > 0) {
+        items.push({
+            type: 'expense',
+            category: 'Wages',
+            payee: `${count} Workers`,
+            description: 'Daily Labour Wages Cons.',
+            amount: totalWage,
+            color: '#ffebee'
+        });
+    }
+
+    // 4. Fetch Income (Payments)
+    const Payment = mongoose.model('Payment');
+    const payments = await Payment.find({
+        date: { $gte: startOfDay, $lte: endOfDay },
+        removed: false,
+        amount: { $gt: 0 }
+    }).populate('client villa');
+
+    for (const p of payments) {
+        let payee = p.client ? p.client.name : 'Unknown Client';
+        let desc = p.villa ? `Villa: ${p.villa.name}` : '-';
+        if (p.description) desc += ` | ${p.description}`;
+
+        items.push({
+            type: 'income',
+            category: 'Collection',
+            payee: payee,
+            description: desc,
+            amount: p.amount,
+            color: '#e8f5e9' // Green tint
+        });
+    }
+
+    // Calculate Totals
+    const totalExpense = items.filter(i => i.type === 'expense').reduce((sum, i) => sum + i.amount, 0);
+    const totalIncome = items.filter(i => i.type === 'income').reduce((sum, i) => sum + i.amount, 0);
+
+    return {
+        date: dateStr,
+        items,
+        totalExpense,
+        totalIncome,
+        netBalance: totalIncome - totalExpense
+    };
+};
+
+module.exports = { generateDailySummary, getDailyReportData };

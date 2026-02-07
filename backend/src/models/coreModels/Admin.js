@@ -32,6 +32,10 @@ const adminSchema = new Schema({
     default: 'owner',
     enum: ['owner', 'engineer', 'accountant'],
   },
+  dashboardConfig: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
 });
 
 module.exports = mongoose.model('Admin', adminSchema);

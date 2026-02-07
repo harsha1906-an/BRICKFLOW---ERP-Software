@@ -1,0 +1,96 @@
+doctype html
+html
+  head
+    link(rel="shortcut icon" type="image/png" href="/images/icons/favicon.png")
+    meta(name="viewport" content="width=device-width, initial-scale=1")
+    style.
+      @page { size: A4 portrait; margin: 10mm; }
+      body { width: 100%; margin: 0; padding: 0px; background: #ffffff; font-family: sans-serif; font-size:11px; color:#222; box-sizing: border-box; }
+      *, *:before, *:after { box-sizing: inherit; color:#222; }
+      .clearfix { display: block; width: 100%; }
+      .left { float:left; }
+      .right { float:right; }
+      .text-center { text-align: center; }
+      .text-right { text-align: right; }
+      .top-area { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+      .logo { width: 120px; }
+      .report-title { font-size: 28px; color: #000080; text-transform: uppercase; margin: 0; font-weight: 900; }
+      
+      .info-section { width: 100%; margin-bottom: 20px; display: flex; justify-content: space-between; }
+      .info-box { width: 48%; }
+      .info-row { display: flex; margin-bottom: 8px; border-bottom: 1px solid #ccc; }
+      .info-label { width: 100px; color: #800080; font-weight: bold; padding: 2px 0; }
+      .info-value { flex-grow: 1; padding: 2px 5px; }
+
+      .table-report { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+      .table-report th { background: #000080; color: #ffffff; padding: 8px; border: 1px solid #000; text-align: center; font-weight: bold; font-size: 12px; }
+      .table-report td { padding: 8px; border: 1px solid #000; text-align: center; height: 30px; }
+      .table-report tr:nth-child(even) { background: #f9f9f9; }
+      
+      .signature-section { margin-top: 50px; display: flex; justify-content: space-between; padding: 0 50px; }
+      .sig-box { text-align: center; width: 200px; border-top: 1px solid #000; padding-top: 10px; }
+      
+  body
+    .top-area
+      if logo
+        img.logo(src=logo)
+      else
+        div(style="width: 120px; height: 50px; background: #eee; text-align: center; line-height: 50px;") LOGO
+      h1.report-title Petty Cash Report
+
+    .info-section
+      .info-box
+        .info-row
+          .info-label Date
+          .info-value #{moment(model.date).format(dateFormat)}
+        .info-row
+          .info-label Manager
+          .info-value #{model.manager || 'Manoja Kumar'}
+      .info-box
+        .info-row
+          .info-label Cash Received
+          .info-value #{moneyFormatter({amount: model.totalCashReceived})}
+        .info-row
+          .info-label Total Expenses
+          .info-value #{moneyFormatter({amount: model.totalExpenses})}
+        .info-row
+          .info-label Current Balance
+          .info-value #{moneyFormatter({amount: model.currentBalance})}
+
+    main
+      table.table-report
+        thead
+          tr
+            th(style="width: 12%") Date
+            th(style="width: 23%") Description
+            th(style="width: 15%") Type
+            th(style="width: 15%") Amount
+            th(style="width: 15%") Receipt #
+            th(style="width: 20%") Notes
+        tbody
+          each item in model.items
+            tr
+              td #{moment(item.date).format(dateFormat)}
+              td #{item.name}
+              td #{item.type === 'inward' ? 'Top-up' : 'Expense'}
+              td(style="color: " + (item.type === 'inward' ? '#008000' : '#d32f2f'))
+                | #{item.type === 'inward' ? '+' : '-'} #{moneyFormatter({amount: item.amount})}
+              td #{item.receiptNumber || '-'}
+              td #{item.note || '-'}
+          
+          // Fill empty rows to maintain A4 look
+          - var emptyRows = 15 - model.items.length
+          if emptyRows > 0
+            - for (var x = 0; x < emptyRows; x++)
+              tr
+                td
+                td
+                td
+                td
+                td
+
+    .signature-section
+      .sig-box 
+        strong Prepared By
+      .sig-box 
+        strong Authorized Signature

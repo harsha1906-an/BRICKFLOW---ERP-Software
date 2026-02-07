@@ -149,6 +149,56 @@ const summary = async (req, res) => {
     return res.status(200).json({ success: true, result: [] });
 }
 
+const receipt = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const booking = await Booking.findOne({
+            _id: id,
+            removed: false,
+        })
+            .populate('client')
+            .populate('villa')
+            .exec();
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                result: null,
+                message: 'Booking not found',
+            });
+        }
+
+        const { numberToWords } = require('@/helpers');
+        const pdfController = require('@/controllers/pdfController');
+
+        const model = {
+            ...booking.toObject(),
+            inWords: numberToWords(booking.downPayment || 0),
+        };
+
+        const filename = `BookingReceipt_${booking._id}.pdf`;
+
+        // Generate PDF Buffer
+        const pdfBuffer = await pdfController.generatePdf(
+            'BookingReceipt',
+            { filename, format: 'A5' }, // targetLocation removed
+            model
+        );
+
+        // Send Buffer
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="${filename}"`,
+            'Content-Length': pdfBuffer.length,
+        });
+
+        return res.send(Buffer.from(pdfBuffer));
+    } catch (error) {
+        console.error('Receipt generation error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to generate receipt' });
+    }
+};
+
 
 module.exports = {
     create,
@@ -158,5 +208,7 @@ module.exports = {
     search,
     filter,
     listAll,
-    summary
+    listAll,
+    summary,
+    receipt
 };

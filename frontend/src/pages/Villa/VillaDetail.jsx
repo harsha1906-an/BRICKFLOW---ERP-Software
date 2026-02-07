@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Descriptions, Button, Modal, Form, Select, InputNumber, Input, Tag, App } from 'antd';
+import { Card, Descriptions, Button, Modal, Form, Select, InputNumber, Input, Tag, App, Row, Col } from 'antd';
 import { useParams } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { request } from '@/request';
@@ -110,15 +110,69 @@ const VillaProgressSection = ({ companyId, villaId }) => {
 };
 
 const VillaDetail = () => {
-  // Assume route: /villa/:villaId
   const { villaId } = useParams();
   const { state } = useAppContext();
   const companyId = state.currentCompany;
-  // ...fetch villa details as needed...
+  const [villa, setVilla] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchVilla = async () => {
+    setLoading(true);
+    try {
+      const response = await request.read({ entity: 'villa', id: villaId });
+      if (response.success) {
+        setVilla(response.result);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (villaId) {
+      fetchVilla();
+    }
+  }, [villaId]);
+
   return (
-    <div>
-      {/* ...existing villa details... */}
-      <VillaProgressSection companyId={companyId} villaId={villaId} />
+    <div style={{ padding: '20px' }}>
+      <Row gutter={[24, 24]}>
+        <Col span={24}>
+          <Card title="Villa Details" loading={loading}>
+            {villa ? (
+              <Descriptions bordered column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 1, xs: 1 }}>
+                <Descriptions.Item label="Villa Number">{villa.villaNumber}</Descriptions.Item>
+                <Descriptions.Item label="House Type">{villa.houseType}</Descriptions.Item>
+                <Descriptions.Item label="Status">
+                  <Tag color={villa.status === 'available' ? 'green' : villa.status === 'booked' ? 'orange' : 'blue'}>
+                    {villa.status.toUpperCase()}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Land Area">{villa.landArea || 0} sqft</Descriptions.Item>
+                <Descriptions.Item label="Ground Floor">{villa.groundFloorArea || 0} sqft</Descriptions.Item>
+                <Descriptions.Item label="1st Floor">{villa.firstFloorArea || 0} sqft</Descriptions.Item>
+                <Descriptions.Item label="Total Built Up Area">{villa.builtUpArea || 0} sqft</Descriptions.Item>
+                <Descriptions.Item label="Facing">{villa.facing}</Descriptions.Item>
+                <Descriptions.Item label="Accountable (White)">
+                  {villa.accountableAmount?.toLocaleString()}
+                </Descriptions.Item>
+                <Descriptions.Item label="Non Accountable (Black)">
+                  {villa.nonAccountableAmount?.toLocaleString()}
+                </Descriptions.Item>
+                <Descriptions.Item label="Total Amount">
+                  <strong>{villa.totalAmount?.toLocaleString()}</strong>
+                </Descriptions.Item>
+              </Descriptions>
+            ) : (
+              <span>No villa data found.</span>
+            )}
+          </Card>
+        </Col>
+        <Col span={24}>
+          <VillaProgressSection companyId={companyId} villaId={villaId} />
+        </Col>
+      </Row>
     </div>
   );
 };

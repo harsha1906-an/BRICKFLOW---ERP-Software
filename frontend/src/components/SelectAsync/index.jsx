@@ -18,6 +18,7 @@ const SelectAsync = ({
   value,
   onChange,
   options = {},
+  id,
 }) => {
   const translate = useLanguage();
   const [selectOptions, setOptions] = useState([]);
@@ -75,6 +76,8 @@ const SelectAsync = ({
 
   return (
     <Select
+      id={id}
+      name={id}
       loading={fetchIsLoading}
       disabled={fetchIsLoading}
       value={currentValue}

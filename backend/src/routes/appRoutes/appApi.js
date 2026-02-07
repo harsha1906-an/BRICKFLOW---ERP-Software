@@ -1,6 +1,7 @@
 const express = require('express');
 const { catchErrors } = require('@/handlers/errorHandlers');
 const router = express.Router();
+const chartDataController = require('@/controllers/appControllers/chartDataController');
 
 const appControllers = require('@/controllers/appControllers');
 const { routesList } = require('@/models/utils');
@@ -36,7 +37,12 @@ const routerApp = (entity, controller) => {
   if (entity === 'material') {
     router.route(`/${entity}/adjust/:id`).post(catchErrors(controller['adjustStock']));
     router.route(`/${entity}/history/:id`).get(catchErrors(controller['history']));
+    router.route(`/${entity}/transactions`).get(catchErrors(controller['recentTransactions']));
     router.route(`/${entity}/downloadReport`).get(catchErrors(controller['downloadReport']));
+  }
+
+  if (entity === 'client') {
+    router.route(`/${entity}/report`).get(catchErrors(controller['report']));
   }
 
   if (entity === 'purchaseorder') {
@@ -44,7 +50,17 @@ const routerApp = (entity, controller) => {
     router.route(`/${entity}/approve/:id`).patch(catchErrors(controller['approve']));
     router.route(`/${entity}/reject/:id`).patch(catchErrors(controller['reject']));
   }
+
+  if (entity === 'booking') {
+    router.route(`/${entity}/receipt/:id`).get(catchErrors(controller['receipt']));
+  }
+
+  if (entity === 'pettycashtransaction') {
+    router.route(`/${entity}/report`).get(catchErrors(controller['report']));
+  }
 };
+
+router.route('/dashboard/chart-data').get(catchErrors(chartDataController));
 
 routesList.forEach(({ entity, controllerName }) => {
   const controller = appControllers[controllerName];

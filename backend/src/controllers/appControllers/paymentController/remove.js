@@ -2,13 +2,14 @@ const mongoose = require('mongoose');
 
 const Model = mongoose.model('Payment');
 const Invoice = mongoose.model('Invoice');
+const { calculate } = require('@/helpers');
 
 const remove = async (req, res) => {
   // Find document by id and updates with the required fields
   const previousPayment = await Model.findOne({
     _id: req.params.id,
     removed: false,
-  });
+  }).populate('invoice');
 
   if (!previousPayment) {
     return res.status(404).json({
@@ -19,7 +20,6 @@ const remove = async (req, res) => {
   }
 
   const { _id: paymentId, amount: previousAmount } = previousPayment;
-  const { id: invoiceId, total, discount, credit: previousCredit } = previousPayment.invoice;
 
   // Find the document by id and delete it
   let updates = {
@@ -35,28 +35,35 @@ const remove = async (req, res) => {
   ).exec();
   // If no results found, return document not found
 
-  let paymentStatus =
-    total - discount === previousCredit - previousAmount
-      ? 'paid'
-      : previousCredit - previousAmount > 0
-      ? 'partially'
-      : 'unpaid';
+  if (previousPayment.invoice) {
+    const { total, discount, credit: previousCredit } = previousPayment.invoice;
+    const invoiceId = previousPayment.invoice._id;
 
-  const updateInvoice = await Invoice.findOneAndUpdate(
-    { _id: invoiceId },
-    {
-      $pull: {
-        payment: paymentId,
+    const newCredit = calculate.sub(previousCredit, previousAmount);
+
+    let paymentStatus =
+      calculate.sub(total, discount) === newCredit
+        ? 'paid'
+        : newCredit > 0
+          ? 'partially'
+          : 'unpaid';
+
+    const updateInvoice = await Invoice.findOneAndUpdate(
+      { _id: invoiceId },
+      {
+        $pull: {
+          payment: paymentId,
+        },
+        $inc: { credit: -previousAmount },
+        $set: {
+          paymentStatus: paymentStatus,
+        },
       },
-      $inc: { credit: -previousAmount },
-      $set: {
-        paymentStatus: paymentStatus,
-      },
-    },
-    {
-      new: true, // return the new result instead of the old one
-    }
-  ).exec();
+      {
+        new: true, // return the new result instead of the old one
+      }
+    ).exec();
+  }
 
   return res.status(200).json({
     success: true,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Tabs, Card, Button, Descriptions, Tag, Spin } from 'antd';
+import { DownloadOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import useLanguage from '@/locale/useLanguage';
 import { request } from '@/request';
@@ -26,6 +27,26 @@ export default function CustomerRead() {
     const { moneyFormatter } = useMoney();
     const [client, setClient] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [downloading, setDownloading] = useState(false);
+
+    const handleDownload = async () => {
+        setDownloading(true);
+        try {
+            const response = await request.pdf({ entity: `customer/${id}/pdf-details` });
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Customer_${client.name}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error(error);
+        }
+        setDownloading(false);
+    };
 
     useEffect(() => {
         const fetchClient = async () => {
@@ -50,11 +71,18 @@ export default function CustomerRead() {
             key: '1',
             label: translate('Details'),
             children: (
-                <Descriptions title={translate('Client Info')} bordered column={1}>
+                <Descriptions title={translate('Client Info')} bordered column={2}>
                     <Descriptions.Item label={translate('Name')}>{client.name}</Descriptions.Item>
                     <Descriptions.Item label={translate('Email')}>{client.email}</Descriptions.Item>
                     <Descriptions.Item label={translate('Phone')}>{client.phone}</Descriptions.Item>
                     <Descriptions.Item label={translate('Address')}>{client.address}</Descriptions.Item>
+                    <Descriptions.Item label={translate('Customer ID')}>{client.customerId}</Descriptions.Item>
+                    <Descriptions.Item label={translate('Gender')}>{client.gender ? translate(client.gender) : ''}</Descriptions.Item>
+                    <Descriptions.Item label={translate('Father Name')}>{client.fatherName}</Descriptions.Item>
+                    <Descriptions.Item label={translate('DOB')}>{client.dob ? dayjs(client.dob).format(dateFormat) : ''}</Descriptions.Item>
+                    <Descriptions.Item label={translate('Aadhar Card Number')}>{client.aadharCardNumber}</Descriptions.Item>
+                    <Descriptions.Item label={translate('PAN Card Number')}>{client.panCardNumber}</Descriptions.Item>
+                    <Descriptions.Item label={translate('Driving Licence')} span={2}>{client.drivingLicence}</Descriptions.Item>
                 </Descriptions>
             ),
         },
@@ -62,11 +90,6 @@ export default function CustomerRead() {
             key: '2',
             label: translate('Properties / Bookings'),
             children: <ClientBookings clientId={id} moneyFormatter={moneyFormatter} dateFormat={dateFormat} translate={translate} />,
-        },
-        {
-            key: '3',
-            label: translate('Invoices'),
-            children: <ClientInvoices clientId={id} moneyFormatter={moneyFormatter} dateFormat={dateFormat} translate={translate} />,
         },
         {
             key: '4',
@@ -79,6 +102,7 @@ export default function CustomerRead() {
         <div style={{ padding: '20px' }}>
             <div style={{ marginBottom: '20px' }}>
                 <Button onClick={() => navigate('/customer')}>Back to List</Button>
+                <Button icon={<DownloadOutlined />} onClick={handleDownload} loading={downloading} style={{ marginLeft: '10px' }}>Download PDF</Button>
                 <h2 style={{ display: 'inline-block', marginLeft: '20px' }}>{client.name}</h2>
             </div>
             <Card>

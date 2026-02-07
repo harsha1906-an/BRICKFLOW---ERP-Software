@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Tag, Button, Space, Input, Select, Modal, InputNumber, Form, DatePicker, Tooltip } from 'antd';
+import { Card, Table, Tag, Button, Space, Input, Select, Modal, InputNumber, Form, DatePicker, Tooltip, Switch } from 'antd';
 import { PlusOutlined, SearchOutlined, HistoryOutlined, ArrowUpOutlined, ArrowDownOutlined, WarningOutlined } from '@ant-design/icons';
 import { request } from '@/request';
 import { API_BASE_URL } from '@/config/serverApiConfig';
 import { message } from '@/utils/antdGlobal';
 import { useUserRole } from '@/hooks/useUserRole';
+import useMoney from '@/settings/useMoney';
 import MaterialForm from '@/forms/MaterialForm';
 import dayjs from 'dayjs';
 
@@ -60,10 +61,11 @@ export default function InventoryList() {
                         stockMap[stock.material?._id || stock.material] = stock.currentStock;
                     });
 
-                    // Update materials with villa stock
+                    // Update materials with villa stock, but KEEP global stock
                     materials = materials.map(m => ({
                         ...m,
-                        currentStock: stockMap[m._id] || 0, // Default to 0 if no stock at villa
+                        globalStock: m.currentStock, // Preserve original global stock
+                        currentStock: stockMap[m._id] || 0, // Villa-specific stock
                         isGlobal: false
                     }));
                 }
@@ -221,21 +223,8 @@ export default function InventoryList() {
             )}
 
             {/* History Modal */}
-            <Modal title={`History: ${historyModal.material?.name}`} open={historyModal.open} onCancel={() => setHistoryModal({ open: false, material: null, data: [] })} footer={null} width={700}>
-                <Table
-                    dataSource={historyModal.data}
-                    rowKey="_id"
-                    pagination={{ pageSize: 5 }}
-                    columns={[
-                        { title: 'Date', dataIndex: 'date', render: d => dayjs(d).format('DD MMM YYYY') },
-                        { title: 'Type', dataIndex: 'type', render: t => t === 'inward' ? <Tag color="green">IN</Tag> : <Tag color="red">OUT</Tag> },
-                        { title: 'Qty', dataIndex: 'quantity', render: q => <b>{q}</b> },
-                        { title: 'Villa', dataIndex: 'villa', render: v => v ? <Tag color="blue">Villa {v.villaNumber}</Tag> : '-' },
-                        { title: 'Project', dataIndex: 'project', render: p => p?.name || '-' },
-                        { title: 'Usage', dataIndex: 'usageCategory', render: u => <Tag size="small">{u?.replace('_', ' ')}</Tag> },
-                        { title: 'Ref/Notes', key: 'notes', render: (_, r) => <Tooltip title={r.notes}>{r.reference || '-'}</Tooltip> }
-                    ]}
-                />
+            <Modal title={`History: ${historyModal.material?.name}`} open={historyModal.open} onCancel={() => setHistoryModal({ open: false, material: null, data: [] })} footer={null} width={900}>
+                <HistoryTable data={historyModal.data} material={historyModal.material} />
             </Modal>
 
             <ReportModal
@@ -268,12 +257,16 @@ function CreateMaterialModal({ open, onCancel, onSuccess }) {
 function StockAdjustmentModal({ data, projects, villas, suppliers, onCancel, onSuccess, villaFilter }) {
     const [form] = Form.useForm();
     const { type, material, open } = data;
+    const { inputFormatter, inputParser } = useMoney();
     const isInward = type === 'inward';
     const selectedVilla = villas.find(v => v._id === villaFilter);
+
+    const [directToVilla, setDirectToVilla] = useState(false);
 
     useEffect(() => {
         if (open) {
             form.resetFields();
+            setDirectToVilla(false);
             if (selectedVilla) {
                 form.setFieldsValue({ villa: selectedVilla._id });
             }
@@ -283,11 +276,26 @@ function StockAdjustmentModal({ data, projects, villas, suppliers, onCancel, onS
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
+
+            const isGlobalView = villaFilter === 'all';
+            const hasVilla = values.villa || selectedVilla;
+            let finalType = type;
+
+            if (isGlobalView && type === 'outward' && hasVilla) {
+                finalType = 'inward';
+            }
+
+            // Calculate totalCost for inward transactions
+            const totalCost = isInward && values.ratePerUnit && values.quantity
+                ? values.ratePerUnit * values.quantity
+                : 0;
+
             await request.post({
                 entity: `material/adjust/${material._id}`,
                 jsonData: {
                     ...values,
-                    type: type,
+                    type: finalType,
+                    totalCost,
                     date: values.date.format('YYYY-MM-DD')
                 }
             });
@@ -310,6 +318,35 @@ function StockAdjustmentModal({ data, projects, villas, suppliers, onCancel, onS
         >
             {material && (
                 <Form form={form} layout="vertical">
+                    {/* Show Global Stock Info when transferring to villa OR issuing materials */}
+                    <Form.Item noStyle shouldUpdate={(prev, curr) => prev.villa !== curr.villa}>
+                        {({ getFieldValue }) => {
+                            const villaSelected = selectedVilla || getFieldValue('villa');
+                            // Show for: (1) transfer to villa, (2) issue from global
+                            const showGlobalStock = (isInward && (villaSelected || directToVilla)) || (!isInward && !villaSelected);
+                            // Use globalStock if available (when viewing villa), otherwise currentStock
+                            const globalStockAmount = material.globalStock !== undefined ? material.globalStock : material.currentStock;
+
+                            return showGlobalStock ? (
+                                <div style={{
+                                    marginBottom: 16,
+                                    padding: 12,
+                                    background: '#e6f7ff',
+                                    border: '1px solid #91d5ff',
+                                    borderRadius: 4
+                                }}>
+                                    <strong>Available in Global Stock: </strong>
+                                    <span style={{ fontSize: 16, color: '#1890ff', fontWeight: 'bold' }}>
+                                        {globalStockAmount} {material.unit}
+                                    </span>
+                                </div>
+                            ) : null;
+                        }}
+                    </Form.Item>
+
+
+
+                    {/* ... Date and Qty ... */}
                     <Form.Item name="date" label="Date" initialValue={dayjs()} rules={[{ required: true }]}>
                         <DatePicker style={{ width: '100%' }} />
                     </Form.Item>
@@ -317,7 +354,35 @@ function StockAdjustmentModal({ data, projects, villas, suppliers, onCancel, onS
                         <InputNumber style={{ width: '100%' }} min={0.01} />
                     </Form.Item>
 
-                    {/* Villa Selection - Hide if already filtered */}
+                    {/* Pricing Fields - Only for Global Stock Inward (not villa transfers) */}
+                    <Form.Item noStyle shouldUpdate={(prev, curr) => prev.villa !== curr.villa}>
+                        {({ getFieldValue }) => {
+                            const villaSelected = selectedVilla || getFieldValue('villa');
+                            const showPricing = isInward && !villaSelected && !directToVilla;
+                            return showPricing ? (
+                                <>
+                                    <Form.Item
+                                        name="ratePerUnit"
+                                        label="Rate per Unit"
+                                        tooltip="Cost per unit of material"
+                                    >
+                                        <InputNumber
+                                            style={{ width: '100%' }}
+                                            min={0}
+                                            precision={2}
+                                            placeholder="Enter rate per unit"
+                                            formatter={inputFormatter}
+                                            parser={inputParser}
+                                        />
+                                    </Form.Item>
+
+                                    <FormPriceDisplay material={material} form={form} />
+                                </>
+                            ) : null;
+                        }}
+                    </Form.Item>
+
+                    {/* Villa Selection with Toggle */}
                     {selectedVilla ? (
                         <div style={{ marginBottom: 24 }}>
                             <span style={{ color: 'gray' }}>Assigning to: </span>
@@ -325,28 +390,48 @@ function StockAdjustmentModal({ data, projects, villas, suppliers, onCancel, onS
                             <Form.Item name="villa" hidden initialValue={selectedVilla._id}><Input /></Form.Item>
                         </div>
                     ) : (
-                        <Form.Item name="villa" label="Select Villa (Optional)">
-                            <Select placeholder="Assign to Villa" allowClear>
-                                {villas?.map(v => <Select.Option key={v._id} value={v._id}>Villa {v.villaNumber}</Select.Option>)}
-                            </Select>
-                        </Form.Item>
+                        <>
+                            {isInward && (
+                                <Form.Item label="Direct to Villa?">
+                                    <Switch checked={directToVilla} onChange={setDirectToVilla} />
+                                </Form.Item>
+                            )}
+
+                            {(directToVilla || !isInward) && (
+                                <Form.Item
+                                    name="villa"
+                                    label="Select Villa"
+                                    rules={[{ required: directToVilla, message: 'Please select a villa' }]}
+                                >
+                                    <Select placeholder="Assign to Villa" allowClear>
+                                        {villas?.map(v => <Select.Option key={v._id} value={v._id}>Villa {v.villaNumber}</Select.Option>)}
+                                    </Select>
+                                </Form.Item>
+                            )}
+                        </>
                     )}
 
+                    {/* Show Supplier only if NOT assigning to a Villa (i.e. adding to Global Stock) */}
                     {isInward && (
-                        <Form.Item name="supplier" label="Supplier (Optional)">
-                            <Select placeholder="Select Supplier" allowClear showSearch optionFilterProp="children">
-                                {suppliers?.map(s => <Select.Option key={s._id} value={s._id}>{s.name}</Select.Option>)}
-                            </Select>
+                        <Form.Item
+                            noStyle
+                            shouldUpdate={(prevValues, currentValues) => prevValues.villa !== currentValues.villa}
+                        >
+                            {({ getFieldValue }) => {
+                                const villaSelected = selectedVilla || getFieldValue('villa');
+                                return !villaSelected ? (
+                                    <Form.Item name="supplier" label="Supplier">
+                                        <Select placeholder="Select Supplier" allowClear showSearch optionFilterProp="children">
+                                            {suppliers?.map(s => <Select.Option key={s._id} value={s._id}>{s.name}</Select.Option>)}
+                                        </Select>
+                                    </Form.Item>
+                                ) : null;
+                            }}
                         </Form.Item>
                     )}
 
                     {!isInward && (
                         <>
-                            <Form.Item name="project" label="For Project (Site)" rules={[{ required: true }]}>
-                                <Select placeholder="Select Site">
-                                    {projects.map(p => <Select.Option key={p._id} value={p._id}>{p.name}</Select.Option>)}
-                                </Select>
-                            </Form.Item>
                             <Form.Item name="usageCategory" label="Usage Reason" initialValue="daily_work">
                                 <Select>
                                     <Select.Option value="daily_work">Daily Work</Select.Option>
@@ -355,7 +440,27 @@ function StockAdjustmentModal({ data, projects, villas, suppliers, onCancel, onS
                                     <Select.Option value="other">Other</Select.Option>
                                 </Select>
                             </Form.Item>
+                            <Form.Item name="issuedBy" label="Issued By" rules={[{ required: true, message: 'Please enter who issued this item' }]}>
+                                <Input placeholder="Name of Engineer / Storekeeper" />
+                            </Form.Item>
                         </>
+                    )}
+
+                    {/* Vehicle Number - Only for Global Stock Inward */}
+                    {isInward && (
+                        <Form.Item
+                            noStyle
+                            shouldUpdate={(prevValues, currentValues) => prevValues.villa !== currentValues.villa}
+                        >
+                            {({ getFieldValue }) => {
+                                const villaSelected = selectedVilla || getFieldValue('villa');
+                                return !villaSelected ? (
+                                    <Form.Item name="vehicleNumber" label="Vehicle Number">
+                                        <Input placeholder="Enter Vehicle Number" />
+                                    </Form.Item>
+                                ) : null;
+                            }}
+                        </Form.Item>
                     )}
 
                     <Form.Item name="reference" label={isInward ? "Source / PO Number" : "Reference (Gate Pass / Slip No.)"} rules={[{ required: true }]}>
@@ -435,5 +540,64 @@ function ReportModal({ open, onCancel, villas }) {
                 </Form.Item>
             </Form>
         </Modal>
+    );
+}
+
+// History Table Component with Pricing
+function HistoryTable({ data, material }) {
+    const { moneyFormatter } = useMoney();
+
+    return (
+        <Table
+            dataSource={data}
+            rowKey="_id"
+            pagination={{ pageSize: 10 }}
+            scroll={{ x: 1000 }}
+            columns={[
+                { title: 'Date', dataIndex: 'date', width: 110, render: d => dayjs(d).format('DD MMM YYYY') },
+                { title: 'Type', dataIndex: 'type', width: 70, render: t => t === 'inward' ? <Tag color="green">IN</Tag> : <Tag color="red">OUT</Tag> },
+                { title: 'Supplier', dataIndex: 'supplier', width: 150, render: s => s?.name || '-' },
+                { title: 'Qty', dataIndex: 'quantity', width: 100, render: q => <b>{q} {material?.unit}</b> },
+                { title: 'Rate/Unit', dataIndex: 'ratePerUnit', width: 110, render: rate => rate ? moneyFormatter({ amount: rate }) : '-' },
+                { title: 'Total Cost', dataIndex: 'totalCost', width: 120, render: cost => cost ? <b>{moneyFormatter({ amount: cost })}</b> : '-' },
+                { title: 'Villa', dataIndex: 'villa', width: 100, render: v => v ? <Tag color="blue">Villa {v.villaNumber}</Tag> : '-' },
+                { title: 'Project', dataIndex: 'project', width: 120, render: p => p?.name || '-' },
+                { title: 'Usage', dataIndex: 'usageCategory', width: 110, render: u => u ? <Tag size="small">{u?.replace('_', ' ')}</Tag> : '-' },
+                { title: 'Issued By', dataIndex: 'issuedBy', width: 100, render: val => val || '-' },
+                { title: 'Ref/Notes', key: 'notes', width: 120, render: (_, r) => <Tooltip title={r.notes}>{r.reference || '-'}</Tooltip> }
+            ]}
+        />
+    );
+}
+
+// Price Display Component with auto-calculation
+function FormPriceDisplay({ material, form }) {
+    const { moneyFormatter } = useMoney();
+    const [totalCost, setTotalCost] = useState(0);
+
+    const handleChange = () => {
+        const values = form.getFieldsValue(['quantity', 'ratePerUnit']);
+        if (values.quantity && values.ratePerUnit) {
+            setTotalCost(values.quantity * values.ratePerUnit);
+        } else {
+            setTotalCost(0);
+        }
+    };
+
+    return (
+        <div style={{ marginBottom: 16, padding: 12, border: '1px dashed #d9d9d9', borderRadius: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 500 }}>Total Cost:</span>
+                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff' }}>
+                    {totalCost > 0 ? moneyFormatter({ amount: totalCost }) : '-'}
+                </span>
+            </div>
+            <Form.Item noStyle shouldUpdate={(prev, curr) => prev.quantity !== curr.quantity || prev.ratePerUnit !== curr.ratePerUnit}>
+                {() => {
+                    handleChange();
+                    return null;
+                }}
+            </Form.Item>
+        </div>
     );
 }

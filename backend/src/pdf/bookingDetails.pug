@@ -1,0 +1,196 @@
+doctype html
+html
+  head
+    style.
+      @page {
+        size: A4;
+        margin: 15mm;
+      }
+      body {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: #333;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .header {
+        margin-bottom: 20px;
+        border-bottom: 2px solid #0091ea;
+        padding-bottom: 10px;
+      }
+      .report-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+      }
+      .meta-info {
+        font-size: 14px;
+        color: #666;
+      }
+      .section {
+        margin-top: 20px;
+        margin-bottom: 30px;
+      }
+      .section-header {
+        background-color: #0288d1;
+        color: #fff;
+        padding: 8px 10px;
+        font-weight: 600;
+        font-size: 14px;
+        border-radius: 4px 4px 0 0;
+      }
+      .info-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #e0e0e0;
+      }
+      .info-table td {
+        padding: 10px;
+        border-bottom: 1px solid #e0e0e0;
+        vertical-align: top;
+      }
+      .label-cell {
+        background-color: #f5f5f5;
+        font-weight: bold;
+        width: 30%;
+        color: #555;
+      }
+      .value-cell {
+        width: 70%;
+      }
+      .footer-section {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 10px;
+        color: #999;
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+      }
+      .tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .tag-blue { background-color: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+      .tag-green { background-color: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+      .tag-red { background-color: #fff1f0; color: #f5222d; border: 1px solid #ffa39e; }
+      .payment-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      .payment-table th {
+        background-color: #f5f5f5;
+        padding: 8px;
+        text-align: left;
+        border: 1px solid #e0e0e0;
+        font-weight: 600;
+      }
+      .payment-table td {
+        padding: 8px;
+        border: 1px solid #e0e0e0;
+      }
+
+  body
+    .header(style="display: flex; justify-content: space-between; align-items: center;")
+      div
+        if logo
+          img(src=logo, style="max-height: 50px; margin-bottom: 10px;")
+        .report-title Booking Details
+        div(style="font-size: 10px; color: #666; margin-top: 5px")
+            div #{settings.company_name}
+            if settings.company_address
+                div #{settings.company_address}
+            div
+                if settings.company_phone
+                    span Phone: #{settings.company_phone} 
+                if settings.company_email
+                    span | Email: #{settings.company_email}
+      .meta-info(style="text-align: right;")
+        div Generated: #{moment().format(dateFormat)}
+        div Booking Date: #{moment(model.bookingDate).format(dateFormat)}
+
+    .section
+      .section-header Customer Information
+      table.info-table
+        tr
+          td.label-cell Customer Name
+          td.value-cell #{model.client ? model.client.name : '-'}
+        tr
+          td.label-cell Customer ID
+          td.value-cell #{model.customerId || (model.client && model.client.customerId) || '-'}
+        tr
+          td.label-cell Phone
+          td.value-cell #{model.phone || (model.client && model.client.phone) || '-'}
+        tr
+          td.label-cell Email
+          td.value-cell #{model.email || (model.client && model.client.email) || '-'}
+        tr
+          td.label-cell Address
+          td.value-cell #{model.address || (model.client && model.client.address) || '-'}
+
+    .section
+      .section-header Villa Information
+      table.info-table
+        tr
+          td.label-cell Villa Number
+          td.value-cell #{model.villaNumber || (model.villa && model.villa.villaNumber) || '-'}
+        tr
+          td.label-cell Type / Facing
+          td.value-cell #{model.houseType || (model.villa && model.villa.houseType) || '-'} / #{model.facing || (model.villa && model.villa.facing) || '-'}
+        tr
+          td.label-cell Land Area
+          td.value-cell #{model.landArea || (model.villa && model.villa.landArea) || 0} sq.ft
+        tr
+          td.label-cell Built-up Area
+          td.value-cell #{model.builtUpArea || (model.villa && model.villa.builtUpArea) || 0} sq.ft
+    
+    .section
+      .section-header Financial Details
+      table.info-table
+        tr
+          td.label-cell Total Amount
+          td.value-cell #{moneyFormatter({amount: model.totalAmount})}
+        tr
+          td.label-cell Payment Mode
+          td.value-cell 
+             span.tag.tag-blue #{model.paymentMode === 'installment' ? 'Installment' : 'Full Payment'}
+        if model.paymentMode === 'installment'
+           tr
+             td.label-cell Down Payment
+             td.value-cell #{moneyFormatter({amount: model.downPayment})}
+           tr
+             td.label-cell EMI Amount
+             td.value-cell #{moneyFormatter({amount: model.emiAmount})} (x #{model.noOfEmi} Months)
+
+    if model.paymentPlan && model.paymentPlan.length > 0
+        .section
+          .section-header Payment Schedule
+          table.payment-table
+            thead
+              tr
+                th Name
+                th Due Date
+                th Amount
+                th Status
+            tbody
+              each plan in model.paymentPlan
+                tr
+                  td #{plan.name}
+                  td #{plan.dueDate ? moment(plan.dueDate).format(dateFormat) : '-'}
+                  td #{moneyFormatter({amount: plan.amount})}
+                  td
+                    if plan.status === 'paid'
+                        span.tag.tag-green Paid
+                    else if plan.status === 'overdue'
+                        span.tag.tag-red Overdue
+                    else
+                        span.tag.tag-blue #{plan.status}
+
+    .footer-section
+      | This document is system generated by #{settings.company_name}.

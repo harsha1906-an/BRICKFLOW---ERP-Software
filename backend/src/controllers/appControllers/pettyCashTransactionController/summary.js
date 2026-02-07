@@ -18,6 +18,8 @@ const summary = async (req, res) => {
             },
         ]);
 
+        const { calculate } = require('@/helpers');
+
         let totalInward = 0;
         let totalOutward = 0;
 
@@ -26,7 +28,7 @@ const summary = async (req, res) => {
             if (item._id === 'outward') totalOutward = item.total;
         });
 
-        const balance = totalInward - totalOutward;
+        const balance = calculate.sub(totalInward, totalOutward);
 
         const finalResult = {
             totalInward,

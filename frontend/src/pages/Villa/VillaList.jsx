@@ -26,22 +26,47 @@ export default function VillaList() {
             dataIndex: 'houseType',
         },
         {
+            title: translate('Facing'),
+            dataIndex: 'facing',
+            render: (facing) => facing || '-',
+        },
+        {
+            title: translate('Land Area'),
+            dataIndex: 'landArea',
+            render: (area) => area ? `${area} sqft` : '-',
+        },
+        {
+            title: translate('Ground Floor'),
+            dataIndex: 'groundFloorArea',
+            render: (area) => area ? `${area} sqft` : '-',
+        },
+        {
+            title: translate('1st Floor'),
+            dataIndex: 'firstFloorArea',
+            render: (area) => area ? `${area} sqft` : '-',
+        },
+        {
+            title: translate('2nd Floor'),
+            dataIndex: 'secondFloorArea',
+            render: (area) => area ? `${area} sqft` : '-',
+        },
+        {
+            title: translate('Total Built Up'),
+            dataIndex: 'builtUpArea',
+            render: (area) => area ? `${area} sqft` : '-',
+        },
+        {
+            title: translate('Total Price'),
+            dataIndex: 'totalAmount',
+            render: (amount) => moneyFormatter({ amount: amount || 0 }),
+        },
+        {
             title: translate('Status'),
             dataIndex: 'status',
             render: (status) => {
                 let color = status === 'booked' ? 'green' : status === 'sold' ? 'red' : 'blue';
                 return <Tag color={color}>{status ? status.toUpperCase() : 'AVAILABLE'}</Tag>;
             }
-        },
-        {
-            title: translate('Built Up Area'),
-            dataIndex: 'builtUpArea',
-            render: (area) => area ? `${area} sqft` : '-',
-        },
-        {
-            title: translate('Price'),
-            dataIndex: 'price',
-            render: (price) => moneyFormatter({ amount: price }),
         },
     ];
 

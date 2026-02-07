@@ -89,6 +89,8 @@ export default function ItemRow({ field, remove, current = null }) {
             controls={false}
             addonAfter={money.currency_position === 'after' ? money.currency_symbol : undefined}
             addonBefore={money.currency_position === 'before' ? money.currency_symbol : undefined}
+            formatter={money.inputFormatter}
+            parser={money.inputParser}
           />
         </Form.Item>
       </Col>
