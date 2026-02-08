@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, DatePicker, Select, Row, Col, Space, App } from 'antd';
-import { DownloadOutlined, FilterOutlined } from '@ant-design/icons';
+import { DownloadOutlined, FilterOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { ErpLayout } from '@/layout';
+import { useAppContext } from '@/context/appContext';
 import useLanguage from '@/locale/useLanguage';
 import { useMoney, useDate } from '@/settings';
 import { request } from '@/request';
@@ -16,6 +17,9 @@ export default function ExpenseList() {
     const { dateFormat } = useDate();
     const { moneyFormatter } = useMoney();
 
+    const { state } = useAppContext();
+    const companyId = state.currentCompany;
+
     const [loading, setLoading] = useState(false);
     const [expenses, setExpenses] = useState([]);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
@@ -25,6 +29,7 @@ export default function ExpenseList() {
     const [recipientType, setRecipientType] = useState('all');
     const [selectedVilla, setSelectedVilla] = useState('all');
     const [labourSkill, setLabourSkill] = useState('all');
+    const [supplierType, setSupplierType] = useState('all');
     const [villaOptions, setVillaOptions] = useState([]);
 
     const fetchExpenses = async (page = 1) => {
@@ -41,6 +46,11 @@ export default function ExpenseList() {
             // Add recipient type filter
             if (recipientType && recipientType !== 'all') {
                 filters.recipientType = recipientType;
+            }
+
+            // Add supplier-specific filter
+            if (recipientType === 'Supplier' && supplierType && supplierType !== 'all') {
+                filters.supplierType = supplierType;
             }
 
             // Add labour-specific filters when Labour is selected
@@ -90,7 +100,7 @@ export default function ExpenseList() {
 
     useEffect(() => {
         fetchExpenses();
-    }, [dateRange, recipientType, selectedVilla, labourSkill]);
+    }, [dateRange, recipientType, selectedVilla, labourSkill, supplierType]);
 
     const handleExport = () => {
         // Create CSV content
@@ -125,6 +135,28 @@ export default function ExpenseList() {
         message.success('Expenses exported successfully');
     };
 
+    const handleDownloadPDF = () => {
+        const filters = [];
+        if (dateRange && dateRange[0] && dateRange[1]) {
+            filters.push(`startDate=${dateRange[0].format('YYYY-MM-DD')}`);
+            filters.push(`endDate=${dateRange[1].format('YYYY-MM-DD')}`);
+        }
+        if (recipientType && recipientType !== 'all') {
+            filters.push(`recipientType=${recipientType}`);
+        }
+        if (recipientType === 'Supplier' && supplierType && supplierType !== 'all') {
+            filters.push(`supplierType=${supplierType}`);
+        }
+        if (recipientType === 'Labour') {
+            if (selectedVilla && selectedVilla !== 'all') filters.push(`villa=${selectedVilla}`);
+            if (labourSkill && labourSkill !== 'all') filters.push(`labourSkill=${labourSkill}`);
+        }
+
+        const queryString = filters.length > 0 ? `?${filters.join('&')}` : '';
+        const url = `${process.env.VITE_BACKEND_SERVER}api/expense/pdf-report/${companyId}${queryString}`;
+        window.open(url, '_blank');
+    };
+
     const columns = [
         {
             title: translate('Number'),
@@ -148,6 +180,7 @@ export default function ExpenseList() {
             render: (_, record) => {
                 if (record.recipientType === 'Supplier' && record.supplier) return record.supplier.name;
                 if (record.recipientType === 'Labour' && record.labour) return record.labour.name;
+                if (record.recipientType === 'Other') return record.otherRecipient || record.description || 'General Expense';
                 return '-';
             }
         },
@@ -175,14 +208,24 @@ export default function ExpenseList() {
             <Card
                 title={translate('Expenses')}
                 extra={
-                    <Button
-                        type="primary"
-                        icon={<DownloadOutlined />}
-                        onClick={handleExport}
-                        disabled={expenses.length === 0}
-                    >
-                        Export CSV
-                    </Button>
+                    <Space>
+                        <Button
+                            type="primary"
+                            icon={<DownloadOutlined />}
+                            onClick={handleExport}
+                            disabled={expenses.length === 0}
+                        >
+                            Export CSV
+                        </Button>
+                        <Button
+                            type="default"
+                            icon={<FilePdfOutlined />}
+                            onClick={handleDownloadPDF}
+                            disabled={expenses.length === 0}
+                        >
+                            Download PDF
+                        </Button>
+                    </Space>
                 }
             >
                 <Card size="small" title={<><FilterOutlined /> Filters</>}>
@@ -201,11 +244,17 @@ export default function ExpenseList() {
                             <Select
                                 style={{ width: '100%' }}
                                 value={recipientType}
-                                onChange={setRecipientType}
+                                onChange={(val) => {
+                                    setRecipientType(val);
+                                    setLabourSkill('all');
+                                    setSupplierType('all');
+                                    setSelectedVilla('all');
+                                }}
                                 options={[
                                     { value: 'all', label: 'All' },
                                     { value: 'Supplier', label: 'Supplier' },
-                                    { value: 'Labour', label: 'Labour' }
+                                    { value: 'Labour', label: 'Labour' },
+                                    { value: 'Other', label: 'Other/General' }
                                 ]}
                             />
                         </Col>
@@ -238,6 +287,36 @@ export default function ExpenseList() {
                                         { value: 'electrician', label: 'Electrician' },
                                         { value: 'plumber', label: 'Plumber' },
                                         { value: 'helper', label: 'Helper' },
+                                    ]}
+                                />
+                            </Col>
+                        </Row>
+                    )}
+
+                    {/* Supplier-specific filters */}
+                    {recipientType === 'Supplier' && (
+                        <Row gutter={16} style={{ marginTop: 16 }}>
+                            <Col span={12}>
+                                <label>Supplier Type</label>
+                                <Select
+                                    style={{ width: '100%' }}
+                                    value={supplierType}
+                                    onChange={setSupplierType}
+                                    options={[
+                                        { value: 'all', label: 'All Types' },
+                                        { value: 'cement', label: 'Cement' },
+                                        { value: 'aggregate', label: 'Aggregate' },
+                                        { value: 'steel', label: 'Steel' },
+                                        { value: 'rods', label: 'Rods' },
+                                        { value: 'bricks', label: 'Bricks' },
+                                        { value: 'tiles', label: 'Tiles' },
+                                        { value: 'electrical', label: 'Electrical' },
+                                        { value: 'plumbing', label: 'Plumbing' },
+                                        { value: 'hardware', label: 'Hardware' },
+                                        { value: 'paint', label: 'Paint' },
+                                        { value: 'wood', label: 'Wood' },
+                                        { value: 'glass', label: 'Glass' },
+                                        { value: 'sanitary', label: 'Sanitary' },
                                         { value: 'other', label: 'Other' }
                                     ]}
                                 />

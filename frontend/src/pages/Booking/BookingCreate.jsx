@@ -13,7 +13,7 @@ export default function BookingCreate() {
     const { message } = App.useApp();
     const [form] = Form.useForm();
     const translate = useLanguage();
-    const { currency_symbol, inputFormatter, inputParser } = useMoney();
+    const { currency_symbol, inputFormatter, inputParser, moneyFormatter } = useMoney();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const { state } = useLocation();
@@ -25,7 +25,33 @@ export default function BookingCreate() {
     const downPayment = Form.useWatch('downPayment', form);
     const emiAmount = Form.useWatch('emiAmount', form);
 
+    const paymentPlan = Form.useWatch('paymentPlan', form);
+
+    const getTotalMilestoneWhite = () => {
+        if (!paymentPlan || !Array.isArray(paymentPlan)) return 0;
+        return paymentPlan.reduce((acc, curr) => acc + (curr?.accountableAmount || 0), 0);
+    };
+
+    const getTotalMilestoneBlack = () => {
+        if (!paymentPlan || !Array.isArray(paymentPlan)) return 0;
+        return paymentPlan.reduce((acc, curr) => acc + (curr?.nonAccountableAmount || 0), 0);
+    };
+
     const onFinish = async (values) => {
+        // Validation check for White Money
+        const totalWhite = getTotalMilestoneWhite();
+        if (totalWhite !== values.officialAmount) {
+            message.error(`Total White Milestone Amount (${moneyFormatter({ amount: totalWhite })}) does not match Total Official Amount (${moneyFormatter({ amount: values.officialAmount })})`);
+            return;
+        }
+
+        // Validation check for Black Money
+        const totalBlack = getTotalMilestoneBlack();
+        if (totalBlack !== values.internalAmount) {
+            message.error(`Total Black Milestone Amount (${moneyFormatter({ amount: totalBlack })}) does not match Total Internal Amount (${moneyFormatter({ amount: values.internalAmount })})`);
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await request.create({ entity: 'booking', jsonData: values });
@@ -88,7 +114,14 @@ export default function BookingCreate() {
                                                         panCardNumber: client.panCardNumber,
                                                         aadharCardNumber: client.aadharCardNumber,
                                                         drivingLicence: client.drivingLicence,
-                                                        customerId: client.customerId
+                                                        customerId: client.customerId,
+                                                        // Auto-populate nominee details
+                                                        nomineeName: client.nomineeName,
+                                                        nomineeFatherHusbandName: client.nomineeFatherHusbandName,
+                                                        nomineeRelationship: client.nomineeRelationship,
+                                                        nomineeDob: client.nomineeDob ? dayjs(client.nomineeDob) : null,
+                                                        nomineeMobile: client.nomineeMobile,
+                                                        nomineeAddress: client.nomineeAddress || (form.getFieldValue('isSameAddress') ? client.address : ''),
                                                     });
                                                     // Also update nominee if same address is checked
                                                     if (form.getFieldValue('isSameAddress')) {
@@ -484,7 +517,11 @@ export default function BookingCreate() {
                         </Col>
                         <Col span={6}>
                             <Form.Item name="nomineeDob" label={translate('Date of Birth')}>
-                                <DatePicker id="nomineeDob" name="nomineeDob" style={{ width: '100%' }} />
+                                <DatePicker
+                                    style={{ width: '100%' }}
+                                    format={['DD-MM-YYYY', 'DD/MM/YYYY']}
+                                    placeholder="DD-MM-YYYY"
+                                />
                             </Form.Item>
                         </Col>
                         <Col span={6}>
@@ -511,66 +548,146 @@ export default function BookingCreate() {
 
                     <Divider orientation="left">{translate('Payment Plan / Milestones')}</Divider>
 
+                    <Row gutter={24} style={{ marginBottom: 20 }}>
+                        <Col span={8}>
+                            <Descriptions title="Validation Summary" bordered size="small" column={1}>
+                                <Descriptions.Item label="Total White Amount">
+                                    <span style={{ color: getTotalMilestoneWhite() !== officialAmount ? 'red' : 'green' }}>
+                                        {moneyFormatter({ amount: getTotalMilestoneWhite() })} / {moneyFormatter({ amount: officialAmount })}
+                                    </span>
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Total Black Amount">
+                                    <span style={{ color: getTotalMilestoneBlack() !== internalAmount ? 'red' : 'green' }}>
+                                        {moneyFormatter({ amount: getTotalMilestoneBlack() })} / {moneyFormatter({ amount: internalAmount })}
+                                    </span>
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Total Amount">
+                                    <span style={{ color: (getTotalMilestoneWhite() + getTotalMilestoneBlack()) !== totalAmount ? 'red' : 'green' }}>
+                                        {moneyFormatter({ amount: getTotalMilestoneWhite() + getTotalMilestoneBlack() })} / {moneyFormatter({ amount: totalAmount })}
+                                    </span>
+                                </Descriptions.Item>
+                            </Descriptions>
+                        </Col>
+                    </Row>
+
                     <Form.List name="paymentPlan">
                         {(fields, { add, remove }) => (
                             <>
                                 {fields.map(({ key, name, ...restField }) => (
-                                    <Row key={key} gutter={16} align="middle" style={{ marginBottom: 8 }}>
-                                        <Col span={8}>
-                                            <Form.Item
-                                                {...restField}
-                                                name={[name, 'name']}
-                                                rules={[{ required: true, message: 'Missing milestone name' }]}
-                                                style={{ marginBottom: 0 }}
-                                            >
-                                                <Input placeholder="Milestone Name (e.g. Plinth)" />
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={6}>
-                                            <Form.Item
-                                                shouldUpdate={(prev, curr) => prev.paymentPlan !== curr.paymentPlan}
-                                                noStyle
-                                            >
-                                                {({ getFieldValue }) => {
-                                                    const paymentPlan = getFieldValue('paymentPlan');
-                                                    const amount = paymentPlan && paymentPlan[name] ? paymentPlan[name].amount : 0;
-                                                    return (
+                                    <div key={key} style={{ marginBottom: 20, padding: 20, border: '1px solid #f0f0f0', borderRadius: 8, position: 'relative' }}>
+                                        <MinusCircleOutlined
+                                            onClick={() => remove(name)}
+                                            style={{ position: 'absolute', right: 20, top: 20, color: 'red', fontSize: '18px' }}
+                                        />
+                                        <Row gutter={16}>
+                                            <Col span={12}>
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'name']}
+                                                    label="Milestone Name"
+                                                    rules={[{ required: true, message: 'Missing milestone name' }]}
+                                                >
+                                                    <Input placeholder="e.g. Plinth" />
+                                                </Form.Item>
+                                            </Col>
+                                            <Col span={12}>
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'dueDate']}
+                                                    label="Due Date"
+                                                >
+                                                    <DatePicker style={{ width: '100%' }} />
+                                                </Form.Item>
+                                            </Col>
+                                        </Row>
+                                        <Row gutter={16}>
+                                            <Col span={8}>
+                                                <Form.Item
+                                                    shouldUpdate={(prev, curr) => prev.paymentPlan !== curr.paymentPlan}
+                                                >
+                                                    {({ getFieldValue, setFieldsValue }) => (
                                                         <Form.Item
                                                             {...restField}
-                                                            name={[name, 'amount']}
-                                                            rules={[{ required: true, message: 'Missing amount' }]}
-                                                            style={{ marginBottom: 0 }}
-                                                            help={amount ? <span style={{ fontSize: '10px', color: '#aaa' }}>{numberToWords(amount)}</span> : null}
+                                                            name={[name, 'accountableAmount']}
+                                                            label="White Amount"
+                                                            initialValue={0}
                                                         >
-                                                            <InputNumber placeholder="Amount" style={{ width: '100%' }} />
+                                                            <InputNumber
+                                                                style={{ width: '100%' }}
+                                                                formatter={inputFormatter}
+                                                                parser={inputParser}
+                                                                prefix={currency_symbol}
+                                                                onChange={(value) => {
+                                                                    const paymentPlan = getFieldValue('paymentPlan');
+                                                                    const black = paymentPlan[name]?.nonAccountableAmount || 0;
+                                                                    const updatedPlan = [...paymentPlan];
+                                                                    updatedPlan[name].amount = (value || 0) + black;
+                                                                    setFieldsValue({ paymentPlan: updatedPlan });
+                                                                }}
+                                                            />
                                                         </Form.Item>
-                                                    );
-                                                }}
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={6}>
-                                            <Form.Item
-                                                {...restField}
-                                                name={[name, 'dueDate']}
-                                                style={{ marginBottom: 0 }}
-                                            >
-                                                <DatePicker placeholder="Due Date" style={{ width: '100%' }} />
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={2}>
-                                            <Form.Item
-                                                {...restField}
-                                                name={[name, 'status']}
-                                                hidden
-                                            >
-                                                <Input />
-                                            </Form.Item>
-                                            <MinusCircleOutlined onClick={() => remove(name)} />
-                                        </Col>
-                                    </Row>
+                                                    )}
+                                                </Form.Item>
+                                            </Col>
+                                            <Col span={8}>
+                                                <Form.Item
+                                                    shouldUpdate={(prev, curr) => prev.paymentPlan !== curr.paymentPlan}
+                                                >
+                                                    {({ getFieldValue, setFieldsValue }) => (
+                                                        <Form.Item
+                                                            {...restField}
+                                                            name={[name, 'nonAccountableAmount']}
+                                                            label="Black Amount"
+                                                            initialValue={0}
+                                                        >
+                                                            <InputNumber
+                                                                style={{ width: '100%' }}
+                                                                formatter={inputFormatter}
+                                                                parser={inputParser}
+                                                                prefix={currency_symbol}
+                                                                onChange={(value) => {
+                                                                    const paymentPlan = getFieldValue('paymentPlan');
+                                                                    const white = paymentPlan[name]?.accountableAmount || 0;
+                                                                    const updatedPlan = [...paymentPlan];
+                                                                    updatedPlan[name].amount = white + (value || 0);
+                                                                    setFieldsValue({ paymentPlan: updatedPlan });
+                                                                }}
+                                                            />
+                                                        </Form.Item>
+                                                    )}
+                                                </Form.Item>
+                                            </Col>
+                                            <Col span={8}>
+                                                <Form.Item
+                                                    shouldUpdate={(prev, curr) => prev.paymentPlan !== curr.paymentPlan}
+                                                >
+                                                    {({ getFieldValue }) => {
+                                                        const paymentPlan = getFieldValue('paymentPlan');
+                                                        const amount = paymentPlan && paymentPlan[name] ? paymentPlan[name].amount : 0;
+                                                        return (
+                                                            <Form.Item
+                                                                {...restField}
+                                                                name={[name, 'amount']}
+                                                                label="Total Milestone Amount"
+                                                                help={amount ? <span style={{ fontSize: '10px', color: '#aaa' }}>{numberToWords(amount)}</span> : null}
+                                                            >
+                                                                <InputNumber
+                                                                    style={{ width: '100%' }}
+                                                                    formatter={inputFormatter}
+                                                                    parser={inputParser}
+                                                                    prefix={currency_symbol}
+                                                                    readOnly
+                                                                />
+                                                            </Form.Item>
+                                                        );
+                                                    }}
+                                                </Form.Item>
+                                            </Col>
+                                        </Row>
+                                    </div>
                                 ))}
                                 <Form.Item>
-                                    <Button type="dashed" onClick={() => add({ status: 'pending' })} block icon={<PlusOutlined />}>
+                                    <Button type="dashed" onClick={() => add({ status: 'pending', accountableAmount: 0, nonAccountableAmount: 0 })} block icon={<PlusOutlined />}>
                                         Add Milestone
                                     </Button>
                                 </Form.Item>

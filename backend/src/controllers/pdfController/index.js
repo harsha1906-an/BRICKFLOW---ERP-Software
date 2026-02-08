@@ -9,7 +9,7 @@ const { useMoney, useDate } = require('@/settings');
 
 const { getDailyReportData } = require('@/modules/LabourModule/reporting.service');
 
-const pugFiles = ['invoice', 'offer', 'quote', 'payment', 'inventoryreport', 'paymentrequest', 'bookingreceipt', 'expensevoucher', 'pettycashreport', 'customersummary', 'dailyexpensereport', 'customerdetails', 'supplierdetails', 'bookingdetails', 'labourlist'];
+const pugFiles = ['invoice', 'offer', 'quote', 'payment', 'inventoryreport', 'paymentrequest', 'bookingreceipt', 'expensevoucher', 'pettycashreport', 'customersummary', 'dailyexpensereport', 'customerdetails', 'supplierdetails', 'bookingdetails', 'labourlist', 'villareport', 'expensereport'];
 
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local' });
@@ -71,7 +71,7 @@ exports.generatePdf = async (
 
       // Load Logo
       let logoBase64 = null;
-      if (['bookingreceipt', 'expensevoucher', 'pettycashreport', 'dailyexpensereport', 'customerdetails', 'supplierdetails', 'bookingdetails'].includes(normalizedModelName)) {
+      if (['bookingreceipt', 'expensevoucher', 'pettycashreport', 'dailyexpensereport', 'customerdetails', 'supplierdetails', 'bookingdetails', 'villareport'].includes(normalizedModelName)) {
         try {
           const logoPath = path.resolve(__dirname, '../../public/uploads/logo.png');
           if (fs.existsSync(logoPath)) {
@@ -132,11 +132,13 @@ exports.generatePdf = async (
 exports.downloadDailyReport = async (req, res) => {
   try {
     const { companyId } = req.params;
-    const { date } = req.query;
+    const { date, startDate, endDate } = req.query;
 
-    console.log(`Generating Daily Expense Report PDF for Company: ${companyId}, Date: ${date}`);
+    console.log(`Generating Daily Expense Report PDF for Company: ${companyId}, Date: ${date || (startDate + ' to ' + endDate)}`);
 
-    const result = await getDailyReportData(companyId, date);
+    // Pass startDate/endDate if available, otherwise just date
+    const start = date || startDate;
+    const result = await getDailyReportData(companyId, start, endDate);
 
     const rawPdf = await exports.generatePdf(
       'dailyExpenseReport',
@@ -152,9 +154,14 @@ exports.downloadDailyReport = async (req, res) => {
     fs.writeFileSync(debugPath, pdfBuffer);
     console.log('Saved debug copy to:', debugPath);
 
+    let filename = `DailyReport_${result.date ? result.date.replace(/\//g, '-') : 'Range'}.pdf`;
+    if (startDate && endDate) {
+      filename = `DailyReport_${startDate}_to_${endDate}.pdf`;
+    }
+
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="DailyReport_${result.date.replace(/\//g, '-')}.pdf"`,
+      'Content-Disposition': `attachment; filename="${filename}"`,
       'Content-Length': pdfBuffer.length,
     });
 
@@ -258,18 +265,41 @@ exports.downloadBookingDetails = async (req, res) => {
     console.log(`downloadBookingDetails called for ID: ${id}`);
 
     const Booking = mongoose.model('Booking');
+    const Payment = mongoose.model('Payment');
+
     const result = await Booking.findById(id).populate('client').populate('villa').lean();
 
     if (!result) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
+    // Fetch Payments
+    const payments = await Payment.find({ booking: id, removed: false }).sort({ date: 1 }).lean();
+
+    // Calculate Stats
+    const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const paidWhite = payments.filter(p => p.ledger === 'official').reduce((sum, p) => sum + (p.amount || 0), 0);
+    const paidBlack = payments.filter(p => p.ledger === 'internal').reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    // Safety check for older bookings that might not have accountableAmount set
+    const officialAmount = result.accountableAmount || result.officialAmount || 0;
+    const internalAmount = result.nonAccountableAmount || result.internalAmount || 0;
+
+    const stats = {
+      totalPaid,
+      paidWhite,
+      paidBlack,
+      pendingWhite: officialAmount - paidWhite,
+      pendingBlack: internalAmount - paidBlack,
+      pendingTotal: (result.totalAmount || 0) - totalPaid
+    };
+
     console.log(`Generating Booking Details PDF for: ${result._id}`);
 
     const rawPdf = await exports.generatePdf(
       'bookingDetails',
       { format: 'A4', landscape: false },
-      result
+      { ...result, payments, stats }
     );
     const pdfBuffer = Buffer.from(rawPdf);
 
@@ -400,3 +430,194 @@ exports.downloadLabourList = async (req, res) => {
     });
   }
 };
+
+exports.downloadVillaReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`downloadVillaReport called for ID: ${id}`);
+
+    // Load Models
+    const Villa = mongoose.model('Villa');
+    const Expense = mongoose.model('Expense');
+    const Payment = mongoose.model('Payment');
+    const InventoryTransaction = mongoose.model('InventoryTransaction');
+    const LabourContract = mongoose.model('LabourContract');
+
+    // 1. Fetch Villa Details
+    const villa = await Villa.findById(id).lean();
+    if (!villa) {
+      return res.status(404).json({ success: false, message: 'Villa not found' });
+    }
+
+    // 2. Fetch Labour Expenses
+    const labourExpenses = await Expense.find({ villa: id, recipientType: 'Labour', removed: false }).populate('labour').lean();
+    const lTotal = labourExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+    // 3. Fetch Material Transactions (Inward only)
+    const materialTransactions = await InventoryTransaction.find({ villa: id, type: 'inward', removed: false }).populate('material').lean();
+    const mTotal = materialTransactions.reduce((sum, t) => sum + (t.totalCost || 0), 0);
+
+    // 4. Fetch Customer Payments
+    const payments = await Payment.find({ villa: id, removed: false }).populate('client').lean();
+    const pTotal = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    // 5. Fetch Labour Contracts
+    const contracts = await LabourContract.find({ villa: id, removed: false }).lean();
+    let contractTotal = 0;
+    let contractPaid = 0;
+
+    contracts.forEach(c => {
+      contractTotal += c.totalAmount || 0;
+      if (c.milestones && Array.isArray(c.milestones)) {
+        c.milestones.forEach(ms => {
+          if (ms.isCompleted) contractPaid += ms.netAmount || 0;
+        });
+      }
+    });
+
+    const stats = {
+      material: mTotal,
+      labour: lTotal,
+      total: mTotal + lTotal,
+      payments: pTotal,
+      balance: (villa.totalAmount || 0) - pTotal,
+      contractTotal: contractTotal,
+      contractPaid: contractPaid,
+      contractRemaining: contractTotal - contractPaid
+    };
+
+    const result = {
+      villa,
+      stats,
+      labourExpenses,
+      materialTransactions,
+      payments,
+      contracts
+    };
+
+    console.log(`Generating Villa Report PDF for Villa: ${villa.villaNumber}`);
+
+    const rawPdf = await exports.generatePdf(
+      'VillaReport',
+      { format: 'A4', landscape: false },
+      result
+    );
+    const pdfBuffer = Buffer.from(rawPdf);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="Villa_Report_${villa.villaNumber}.pdf"`,
+      'Content-Length': pdfBuffer.length,
+    });
+
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('Error in downloadVillaReport:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate PDF',
+      error: error.message,
+    });
+  }
+};
+
+exports.downloadExpenseReport = async (req, res) => {
+  try {
+    const { startDate, endDate, recipientType, villa, labourSkill, supplier, supplierType } = req.query;
+    const companyId = req.params.companyId;
+
+    console.log(`Generating Expense Report PDF for Company: ${companyId}`);
+
+    const Expense = mongoose.model('Expense');
+    const Labour = mongoose.model('Labour');
+    const Supplier = require('@/models/appModels/Supplier');
+
+    let filter = { removed: false };
+    if (companyId) filter.companyId = companyId;
+
+    if (startDate && endDate) {
+      filter.date = {
+        $gte: new Date(startDate),
+        $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999))
+      };
+    }
+
+    if (recipientType && recipientType !== 'all') {
+      filter.recipientType = recipientType;
+    }
+
+    if (supplier) {
+      filter.supplier = supplier;
+    }
+
+    if (supplierType && supplierType !== 'all') {
+      const suppliersWithType = await Supplier.find({
+        removed: false,
+        supplierType: supplierType,
+        ...(companyId ? { companyId } : {})
+      }).distinct('_id');
+
+      if (suppliersWithType.length > 0) {
+        filter.supplier = { $in: suppliersWithType };
+      } else {
+        filter.supplier = { $in: [] }; // Force empty result
+      }
+    }
+
+    if (recipientType === 'Labour') {
+      if (villa) filter.villa = villa;
+      if (labourSkill && labourSkill !== 'all') {
+        const labourWithSkill = await Labour.find({
+          removed: false,
+          skill: labourSkill,
+          ...(companyId ? { companyId } : {})
+        }).distinct('_id');
+
+        if (labourWithSkill.length > 0) {
+          filter.labour = { $in: labourWithSkill };
+        } else {
+          filter.labour = { $in: [] }; // Force empty result
+        }
+      }
+    }
+
+    const items = await Expense.find(filter)
+      .sort({ date: -1 })
+      .populate('supplier')
+      .populate('labour')
+      .lean();
+
+    const data = {
+      items,
+      startDate: startDate ? moment(startDate).format('DD/MM/YYYY') : null,
+      endDate: endDate ? moment(endDate).format('DD/MM/YYYY') : null,
+    };
+
+    const rawPdf = await exports.generatePdf(
+      'expensereport',
+      { format: 'A4', landscape: true },
+      data
+    );
+    const pdfBuffer = Buffer.from(rawPdf);
+
+    const filename = `Expense_Report_${moment().format('YYYY-MM-DD')}.pdf`;
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': pdfBuffer.length,
+    });
+
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('Error generating Expense Report PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate PDF',
+      error: error.message,
+    });
+  }
+};
+

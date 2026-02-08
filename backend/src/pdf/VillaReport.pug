@@ -1,0 +1,240 @@
+doctype html
+html
+  head
+    style.
+      @page {
+        size: A4;
+        margin: 15mm;
+      }
+      body {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: #333;
+        font-size: 11px;
+        line-height: 1.4;
+      }
+      .header {
+        margin-bottom: 20px;
+        border-bottom: 2px solid #0091ea;
+        padding-bottom: 10px;
+      }
+      .report-title {
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+      }
+      .meta-info {
+        font-size: 10px;
+        color: #666;
+        text-align: right;
+      }
+      .section {
+        margin-top: 20px;
+        margin-bottom: 20px;
+      }
+      .section-header {
+        background-color: #0288d1;
+        color: #fff;
+        padding: 6px 10px;
+        font-weight: 600;
+        font-size: 12px;
+        border-radius: 4px 4px 0 0;
+      }
+      .overview-grid {
+        display: table;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 10px 0;
+        margin-top: 10px;
+      }
+      .overview-card {
+        display: table-cell;
+        width: 33%;
+        padding: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        background: #f9f9f9;
+        text-align: center;
+      }
+      .card-title {
+        font-weight: bold;
+        color: #666;
+        font-size: 11px;
+        margin-bottom: 5px;
+      }
+      .card-value {
+        font-size: 14px;
+        font-weight: bold;
+      }
+      .text-green { color: #52c41a; }
+      .text-red { color: #f5222d; }
+      .text-blue { color: #1890ff; }
+      
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 5px;
+      }
+      th {
+        background-color: #f5f5f5;
+        padding: 6px;
+        text-align: left;
+        border: 1px solid #e0e0e0;
+        font-weight: 600;
+        font-size: 10px;
+        color: #444;
+      }
+      td {
+        padding: 6px;
+        border: 1px solid #e0e0e0;
+        font-size: 10px;
+      }
+      .text-right { text-align: right; }
+      .tag {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 9px;
+        font-weight: bold;
+      }
+      .tag-paid { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+      .footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 9px;
+        color: #999;
+        border-top: 1px solid #eee;
+        padding-top: 5px;
+      }
+
+  body
+    .header(style="display: flex; justify-content: space-between; align-items: start;")
+      div
+        if logo
+          img(src=logo, style="max-height: 50px; margin-bottom: 10px;")
+        .report-title Villa Report - #{model.villa.villaNumber}
+        div(style="font-size: 10px; color: #666; margin-top: 5px;") 
+          strong #{settings.company_name}
+          if settings.company_address
+            div #{settings.company_address}
+          div
+            if settings.company_phone
+              span Phone: #{settings.company_phone} 
+            if settings.company_email
+              span | Email: #{settings.company_email}
+      .meta-info(style="text-align: right;")
+        div Generated: #{moment().format(dateFormat)}
+
+    //- 1. Villa Information & Financial Summary
+    .section
+      .section-header Financial Overview
+      .overview-grid
+        .overview-card
+          .card-title Total Villa Value
+          .card-value.text-blue #{moneyFormatter({ amount: model.villa.totalAmount })}
+        .overview-card
+          .card-title Total Receipts
+          .card-value.text-green #{moneyFormatter({ amount: model.stats.payments })}
+        .overview-card
+          .card-title Remaining Balance
+          if model.stats.balance > 0
+            .card-value.text-red #{moneyFormatter({ amount: model.stats.balance })}
+          else
+            .card-value.text-green #{moneyFormatter({ amount: model.stats.balance })}
+
+    //- 2. Labour Contracts Overview
+    .section
+      .section-header Labour Contracts Overview
+      .overview-grid
+        .overview-card
+          .card-title Total Contract Value
+          .card-value.text-blue #{moneyFormatter({ amount: model.stats.contractTotal })}
+        .overview-card
+          .card-title Paid to Contractors
+          .card-value.text-green #{moneyFormatter({ amount: model.stats.contractPaid })}
+        .overview-card
+          .card-title Remaining to Pay
+          if model.stats.contractRemaining > 0
+            .card-value.text-red #{moneyFormatter({ amount: model.stats.contractRemaining })}
+          else
+            .card-value.text-green #{moneyFormatter({ amount: model.stats.contractRemaining })}
+    
+    //- 3. Expense Summary
+    .section
+      .section-header Expense Summary
+      .overview-grid
+        .overview-card
+          .card-title Total Expenses
+          .card-value.text-red #{moneyFormatter({ amount: model.stats.total })}
+        .overview-card
+          .card-title Labour Costs
+          .card-value.text-blue #{moneyFormatter({ amount: model.stats.labour })}
+        .overview-card
+          .card-title Material Costs
+          .card-value.text-green #{moneyFormatter({ amount: model.stats.material })}
+
+    //- 4. Payments Table
+    .section
+      .section-header Receipts (Income)
+      table
+        thead
+          tr
+            th Date
+            th Receipt #
+            th Customer
+            th Mode
+            th.text-right Amount
+        tbody
+          each p in model.payments
+            tr
+              td #{moment(p.date).format(dateFormat)}
+              td #{p.number}
+              td #{p.client ? p.client.name : '-'}
+              td #{p.paymentMode}
+              td.text-right.text-green #{moneyFormatter({ amount: p.amount })}
+
+    //- 5. Labour Expenses Table
+    .section
+      .section-header Labour Expenses
+      table
+        thead
+          tr
+            th Date
+            th Worker
+            th Description
+            th.text-right Amount
+        tbody
+          each l in model.labourExpenses
+            tr
+              td #{moment(l.date).format(dateFormat)}
+              td #{l.labour ? l.labour.name : '-'}
+              td #{l.description || '-'}
+              td.text-right.text-red #{moneyFormatter({ amount: l.amount })}
+
+    //- 6. Material Expenses Table
+    .section
+      .section-header Material Expenses
+      table
+        thead
+          tr
+            th Date
+            th Material
+            th Quantity
+            th.text-right Total Cost
+        tbody
+          each m in model.materialTransactions
+            tr
+              td #{moment(m.date).format(dateFormat)}
+              td #{m.material ? m.material.name : '-'}
+              td #{m.quantity} #{m.material ? m.material.unit : ''}
+              td.text-right.text-red #{moneyFormatter({ amount: m.totalCost })}
+
+    .section(style="margin-top: 50px;")
+      div(style="float: right; text-align: center; width: 200px;")
+        div(style="border-bottom: 1px solid #333; margin-bottom: 5px;")
+        div Authorized Signature
+
+    .footer
+      | Report generated by #{settings.company_name} on #{moment().format('MMMM Do YYYY, h:mm:ss a')}

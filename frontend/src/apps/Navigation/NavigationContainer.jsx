@@ -70,24 +70,14 @@ function Sidebar({ collapsible, isMobile = false }) {
       label: <Link to={'/'}>{translate('dashboard')}</Link>,
     },
     {
-      key: 'customer',
-      icon: <CustomerServiceOutlined />,
-      label: <Link to={'/customer'}>{translate('customers')}</Link>,
-    },
-    {
       key: 'lead',
       icon: <CustomerServiceOutlined />,
       label: <Link to={'/lead'}>Leads</Link>,
     },
     {
-      key: 'inventory',
-      icon: <FileProtectOutlined />,
-      label: <Link to={'/inventory'}>Inventory</Link>,
-    },
-    {
-      key: 'supplier',
-      icon: <TeamOutlined />,
-      label: <Link to={'/supplier'}>Suppliers</Link>,
+      key: 'customer',
+      icon: <CustomerServiceOutlined />,
+      label: <Link to={'/customer'}>{translate('customers')}</Link>,
     },
     {
       key: 'villa',
@@ -98,6 +88,16 @@ function Sidebar({ collapsible, isMobile = false }) {
       key: 'booking',
       icon: <FileDoneOutlined />,
       label: <Link to={'/booking'}>Bookings</Link>,
+    },
+    {
+      key: 'supplier',
+      icon: <TeamOutlined />,
+      label: <Link to={'/supplier'}>Suppliers</Link>,
+    },
+    {
+      key: 'inventory',
+      icon: <FileProtectOutlined />,
+      label: <Link to={'/inventory'}>Inventory</Link>,
     },
     {
       key: 'labour',
@@ -115,11 +115,6 @@ function Sidebar({ collapsible, isMobile = false }) {
       label: <Link to={'/pettycash'}>Petty Cash</Link>,
     },
     {
-      key: 'expense',
-      icon: <DollarOutlined />,
-      label: <Link to={'/expense'}>Expenses</Link>,
-    },
-    {
       key: 'daily-summary',
       icon: <ContainerOutlined />,
       label: <Link to={'/daily-summary'}>Daily Expenses</Link>,
@@ -129,20 +124,10 @@ function Sidebar({ collapsible, isMobile = false }) {
       icon: <ProjectOutlined />,
       label: <Link to={'/villa-reports'}>Villa Reports</Link>,
     },
-    // {
-    //   key: 'invoice',
-    //   icon: <ContainerOutlined />,
-    //   label: <Link to={'/invoice'}>{translate('invoices')}</Link>,
-    // },
     {
-      key: 'quote',
-      icon: <FileSyncOutlined />,
-      label: <Link to={'/quote'}>{translate('quote')}</Link>,
-    },
-    {
-      key: 'purchaseorder',
-      icon: <FileDoneOutlined />,
-      label: <Link to={'/purchaseorder'}>{translate('purchase_order')}</Link>,
+      key: 'expense',
+      icon: <DollarOutlined />,
+      label: <Link to={'/expense'}>Expenses</Link>,
     },
     {
       key: 'payment',
@@ -150,11 +135,20 @@ function Sidebar({ collapsible, isMobile = false }) {
       label: <Link to={'/payment'}>{translate('payments')}</Link>,
     },
     {
+      key: 'purchaseorder',
+      icon: <FileDoneOutlined />,
+      label: <Link to={'/purchaseorder'}>{translate('purchase_order')}</Link>,
+    },
+    {
+      key: 'quote',
+      icon: <FileSyncOutlined />,
+      label: <Link to={'/quote'}>{translate('quote')}</Link>,
+    },
+    {
       key: 'approvals',
       icon: <FileProtectOutlined />,
       label: <Link to={'/approvals'}>{translate('Approvals')}</Link>,
     },
-
     {
       key: 'taxes',
       label: <Link to={'/taxes'}>{translate('taxes')}</Link>,

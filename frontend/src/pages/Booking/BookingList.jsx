@@ -42,6 +42,23 @@ export default function BookingList() {
             render: (amount) => moneyFormatter({ amount }),
         },
         {
+            title: translate('Paid Amount'),
+            dataIndex: 'paymentPlan',
+            render: (paymentPlan) => {
+                const paid = paymentPlan?.reduce((acc, curr) => acc + (curr.paidAmount || 0), 0) || 0;
+                return <span style={{ color: 'green' }}>{moneyFormatter({ amount: paid })}</span>;
+            },
+        },
+        {
+            title: translate('Balance'),
+            dataIndex: 'balance', // Virtual or calculated
+            render: (_, record) => {
+                const paid = record.paymentPlan?.reduce((acc, curr) => acc + (curr.paidAmount || 0), 0) || 0;
+                const balance = (record.totalAmount || 0) - paid;
+                return <span style={{ color: balance > 0 ? 'red' : 'green', fontWeight: 'bold' }}>{moneyFormatter({ amount: balance })}</span>;
+            },
+        },
+        {
             title: translate('Date'),
             dataIndex: 'created',
             render: (date) => dayjs(date).format(dateFormat),

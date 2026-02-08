@@ -77,36 +77,43 @@ export default function SupplierForm({ isUpdateForm = false }) {
                     </Form.Item>
                 </Col>
                 <Col span={12}>
-                    <Form.Item label="Country" name="country">
-                        <Input />
-                    </Form.Item>
-                </Col>
-                <Col span={12}>
-                    <Form.Item label="Tax Number (GST/VAT)" name="taxNumber">
-                        <Input />
-                    </Form.Item>
-                </Col>
-                <Col span={12}>
-                    <Form.Item label="Credit Period (Days)" name="creditPeriod">
-                        <InputNumber style={{ width: '100%' }} />
-                    </Form.Item>
-                </Col>
-                <Col span={12}>
-                    <Form.Item label="Website" name="website">
-                        <Input />
-                    </Form.Item>
-                </Col>
-                <Col span={12}>
-                    <Form.Item
-                        label="Status"
-                        name="enabled"
-                        valuePropName="checked"
-                        initialValue={true}
-                    >
-                        <Switch checkedChildren="Active" unCheckedChildren="Disabled" />
-                    </Form.Item>
-                </Col>
-            </Row>
+                    <Select.Option value="Karnataka">Karnataka</Select.Option>
+                    <Select.Option value="Kerala">Kerala</Select.Option>
+                    <Select.Option value="Andhra Pradesh">Andhra Pradesh</Select.Option>
+                </Select>
+            </Form.Item>
+        </Col >
+            <Col span={12}>
+                <Form.Item label="GSTIN" name="gstin">
+                    <Input />
+                </Form.Item>
+            </Col>
+            <Col span={12}>
+                <Form.Item label="Tax Number (GST/VAT)" name="taxNumber">
+                    <Input />
+                </Form.Item>
+            </Col>
+            <Col span={12}>
+                <Form.Item label="Credit Period (Days)" name="creditPeriod">
+                    <InputNumber style={{ width: '100%' }} />
+                </Form.Item>
+            </Col>
+            <Col span={12}>
+                <Form.Item label="Website" name="website">
+                    <Input />
+                </Form.Item>
+            </Col>
+            <Col span={12}>
+                <Form.Item
+                    label="Status"
+                    name="enabled"
+                    valuePropName="checked"
+                    initialValue={true}
+                >
+                    <Switch checkedChildren="Active" unCheckedChildren="Disabled" />
+                </Form.Item>
+            </Col>
+        </Row >
         </>
     );
 }

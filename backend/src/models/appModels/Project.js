@@ -16,6 +16,12 @@ const schema = new mongoose.Schema({
     location: {
         type: String,
     },
+    state: {
+        type: String, // Project State for POS
+    },
+    gstin: {
+        type: String, // Project-specific GSTIN if applicable
+    },
     status: {
         type: String,
         default: 'Planning',

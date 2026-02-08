@@ -7,6 +7,7 @@ import { request } from '@/request';
 import { useMoney } from '@/settings';
 import dayjs from 'dayjs';
 import storePersist from '@/redux/storePersist';
+import { useAppContext } from '@/context/appContext';
 
 const PettyCashList = () => {
     const { message } = App.useApp();
@@ -19,7 +20,11 @@ const PettyCashList = () => {
     const [form] = Form.useForm();
     const translate = useLanguage();
     const { role } = useUserRole();
+    const [reportRange, setReportRange] = useState([dayjs(), dayjs()]);
     const [reportDate, setReportDate] = useState(dayjs());
+
+    const { state } = useAppContext();
+    const companyId = state.currentCompany;
 
     const fetchData = async () => {
         setLoading(true);
@@ -37,31 +42,42 @@ const PettyCashList = () => {
         setLoading(false);
     };
 
-    const handleDownloadReport = async () => {
+    const handleDownloadDailyReport = async () => {
         if (!reportDate) {
             message.warning('Please select a date for the report');
             return;
         }
-        const formattedDate = reportDate.format('YYYY-MM-DD');
+        const dateStr = reportDate.format('YYYY-MM-DD');
+        await downloadReport(`date=${dateStr}`, `PettyCashBook_${dateStr}.pdf`);
+    };
 
+    const handleDownloadRangeReport = async () => {
+        if (!reportRange || reportRange.length !== 2) {
+            message.warning('Please select a date range for the report');
+            return;
+        }
+        const startDate = reportRange[0].format('YYYY-MM-DD');
+        const endDate = reportRange[1].format('YYYY-MM-DD');
+        await downloadReport(`startDate=${startDate}&endDate=${endDate}`, `PettyCashBook_${startDate}_to_${endDate}.pdf`);
+    };
+
+    const downloadReport = async (queryParams, filename) => {
+        if (!companyId) {
+            message.error('Company ID missing');
+            return;
+        }
         try {
             message.loading({ content: 'Generating report...', key: 'reporting' });
 
-            // Using axios directly from request module instance if possible, or just standard axios
-            // const response = await request.get({ 
-            //     entity: `pettycashtransaction/report?date=${formattedDate}`,
-            //     options: { responseType: 'blob' } // This won't work with current standard request.get
-            // });
-
-            // Since request.get might not support blob easily without modification, 
-            // I'll stick to a more controlled fetch but ensure it mimics axios exactly.
             const auth = storePersist.get('auth');
             const token = auth?.current?.token;
             const baseUrl = import.meta.env.VITE_BACKEND_SERVER.endsWith('/')
                 ? import.meta.env.VITE_BACKEND_SERVER
                 : import.meta.env.VITE_BACKEND_SERVER + '/';
 
-            const downloadRes = await fetch(`${baseUrl}api/pettycashtransaction/report?date=${formattedDate}`, {
+            const apiUrl = `${baseUrl}api/pettycashtransaction/report?${queryParams}`;
+
+            const downloadRes = await fetch(apiUrl, {
                 headers: {
                     'Authorization': token ? `Bearer ${token}` : '',
                 }
@@ -80,7 +96,7 @@ const PettyCashList = () => {
             const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = downloadUrl;
-            link.setAttribute('download', `PettyCashReport_${formattedDate}.pdf`);
+            link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();
             link.parentNode.removeChild(link);
@@ -170,20 +186,44 @@ const PettyCashList = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <h2 style={{ margin: 0 }}>Petty Cash Ledger</h2>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <div style={{ marginRight: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <DatePicker
-                            value={reportDate}
-                            onChange={setReportDate}
-                            format="DD/MM/YYYY"
-                            allowClear={false}
-                        />
-                        <Button
-                            icon={<PrinterOutlined />}
-                            onClick={handleDownloadReport}
-                            title="Print Daily Report"
-                        >
-                            Daily Report
-                        </Button>
+                    <div style={{ marginRight: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+                        {/* Daily Report Section - Petty Cash Book */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{ fontSize: '12px', color: '#666' }}>Date:</span>
+                            <DatePicker
+                                value={reportDate}
+                                onChange={setReportDate}
+                                format="DD/MM/YYYY"
+                                allowClear={false}
+                                style={{ width: 130 }}
+                            />
+                            <Button
+                                icon={<PrinterOutlined />}
+                                onClick={handleDownloadDailyReport}
+                                title="Download Petty Cash Book (Daily)"
+                            />
+                        </div>
+
+                        <div style={{ width: 1, height: 24, background: '#d9d9d9' }} />
+
+                        {/* Range Report Section - Petty Cash Book Only */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{ fontSize: '12px', color: '#666' }}>Date Range:</span>
+                            <DatePicker.RangePicker
+                                value={reportRange}
+                                onChange={setReportRange}
+                                format="DD/MM/YYYY"
+                                allowClear={false}
+                                style={{ width: 240 }}
+                            />
+                            <Button
+                                icon={<PrinterOutlined />}
+                                onClick={handleDownloadRangeReport}
+                                title="Download Petty Cash Book"
+                            >
+                                Download Book
+                            </Button>
+                        </div>
                     </div>
                     {role === 'OWNER' && (
                         <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal('inward')} style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}>

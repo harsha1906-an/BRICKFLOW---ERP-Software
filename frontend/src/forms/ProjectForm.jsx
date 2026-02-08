@@ -26,6 +26,22 @@ export default function ProjectForm({ isUpdateForm = false }) {
                     </Form.Item>
                 </Col>
                 <Col span={12}>
+                    <Form.Item label="State (Place of Supply)" name="state" initialValue="Tamil Nadu">
+                        <Select>
+                            <Select.Option value="Tamil Nadu">Tamil Nadu</Select.Option>
+                            <Select.Option value="Karnataka">Karnataka</Select.Option>
+                            <Select.Option value="Kerala">Kerala</Select.Option>
+                            <Select.Option value="Andhra Pradesh">Andhra Pradesh</Select.Option>
+                            <Select.Option value="Other">Other</Select.Option>
+                        </Select>
+                    </Form.Item>
+                </Col>
+                <Col span={12}>
+                    <Form.Item label="Project GSTIN" name="gstin">
+                        <Input placeholder="If registered separately" />
+                    </Form.Item>
+                </Col>
+                <Col span={12}>
                     <Form.Item label="Status" name="status" initialValue="Planning">
                         <Select>
                             <Select.Option value="Planning">Planning</Select.Option>

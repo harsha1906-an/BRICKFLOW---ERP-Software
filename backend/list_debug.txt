@@ -960,3 +960,61 @@ Found: 6
 Found: 6
 [2026-02-07T09:04:08.928Z] List Query: {"removed":false}
 Found: 6
+[2026-02-07T09:46:21.535Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T09:48:37.844Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T10:34:33.241Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T11:08:32.084Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T11:08:40.747Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T11:09:13.452Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T11:10:00.204Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T11:10:00.249Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T11:12:17.383Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T11:36:05.078Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T11:40:32.777Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T14:39:43.020Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T14:39:45.687Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T14:39:50.935Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T14:44:52.009Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T14:50:10.249Z] List Query: {"removed":false}
+Found: 6
+[2026-02-07T15:06:06.618Z] List Query: {"removed":false,"status":"available"}
+Found: 1
+[2026-02-07T15:06:08.076Z] List Query: {"removed":false,"status":"available"}
+Found: 1
+[2026-02-07T15:11:58.190Z] List Query: {"removed":false,"status":"available"}
+Found: 1
+[2026-02-07T15:11:58.544Z] List Query: {"removed":false,"status":"available"}
+Found: 1
+[2026-02-07T15:12:31.125Z] List Query: {"removed":false,"status":"available"}
+Found: 1
+[2026-02-07T15:12:31.511Z] List Query: {"removed":false,"status":"available"}
+Found: 1
+[2026-02-07T15:15:35.901Z] List Query: {"removed":false,"status":"available"}
+Found: 1
+[2026-02-07T15:15:36.278Z] List Query: {"removed":false,"status":"available"}
+Found: 1
+[2026-02-07T15:15:44.852Z] List Query: {"removed":false,"status":"available"}
+Found: 1
+[2026-02-07T15:15:45.197Z] List Query: {"removed":false,"status":"available"}
+Found: 1
+[2026-02-07T15:42:52.753Z] List Query: {"removed":false}
+Found: 0
+[2026-02-07T17:35:50.801Z] List Query: {"removed":false}
+Found: 0
+[2026-02-07T17:40:33.125Z] List Query: {"removed":false}
+Found: 0

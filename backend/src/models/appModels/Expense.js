@@ -60,11 +60,37 @@ const schema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    // Added Tax Fields
+    project: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Project',
+        autopopulate: true,
+    },
+    paymentType: {
+        type: String,
+        enum: ['Construction', 'Land', 'Other'],
+        default: 'Construction',
+    },
+    tax: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Taxes',
+        autopopulate: true,
+    },
+    taxRate: { type: Number, default: 0 },
+    taxAmount: { type: Number, default: 0 },
+    taxType: { type: String, enum: ['IGST', 'CGST_SGST', 'None'], default: 'None' },
+    totalAmount: { type: Number, default: 0 },
     advance: {
         type: Number,
         default: 0,
     },
     reference: {
+        type: String,
+    },
+    otherRecipient: {
+        type: String,
+    },
+    transactionCode: {
         type: String,
     },
     description: {

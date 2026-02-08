@@ -86,11 +86,11 @@ const generateDailySummary = async (companyId, date = new Date()) => {
     };
 };
 
-// Helper to gather detailed data for PDF
-const getDailyReportData = async (companyId, date = new Date()) => {
+// Helper to gather detailed data for PDF (Single Day)
+const getSingleDayReportData = async (companyId, date) => {
     const Expense = mongoose.model('Expense');
     const PettyCashTransaction = mongoose.model('PettyCashTransaction');
-    const Attendance = mongoose.model('Attendance'); // If we want to include wage rows
+    const Attendance = mongoose.model('Attendance');
 
     // Fix: Use IST Timezone
     const startOfDay = moment(date).utcOffset('+05:30').startOf('day').toDate();
@@ -192,6 +192,34 @@ const getDailyReportData = async (companyId, date = new Date()) => {
         totalIncome,
         netBalance: totalIncome - totalExpense
     };
+};
+
+// Main function to handle date ranges
+const getDailyReportData = async (companyId, date, endDate = null) => {
+    if (!endDate) {
+        // Single date (Legacy)
+        return await getSingleDayReportData(companyId, date);
+    } else {
+        // Date Range
+        const start = moment(date);
+        const end = moment(endDate);
+        const days = [];
+        const reports = [];
+
+        let current = start.clone();
+        while (current.isSameOrBefore(end, 'day')) {
+            days.push(current.clone());
+            current.add(1, 'days');
+        }
+
+        // Fetch properly for each day
+        for (const day of days) {
+            const report = await getSingleDayReportData(companyId, day.toDate());
+            reports.push(report);
+        }
+
+        return reports;
+    }
 };
 
 module.exports = { generateDailySummary, getDailyReportData };

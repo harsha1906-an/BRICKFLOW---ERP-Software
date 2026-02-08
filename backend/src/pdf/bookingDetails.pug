@@ -45,7 +45,7 @@ html
         border: 1px solid #e0e0e0;
       }
       .info-table td {
-        padding: 10px;
+        padding: 8px;
         border-bottom: 1px solid #e0e0e0;
         vertical-align: top;
       }
@@ -79,22 +79,30 @@ html
       .tag-blue { background-color: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
       .tag-green { background-color: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
       .tag-red { background-color: #fff1f0; color: #f5222d; border: 1px solid #ffa39e; }
-      .payment-table {
+      .stripe-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 10px;
       }
-      .payment-table th {
-        background-color: #f5f5f5;
-        padding: 8px;
+      .stripe-table th {
+        background-color: #f0f0f0;
+        color: #333;
+        font-weight: bold;
         text-align: left;
-        border: 1px solid #e0e0e0;
-        font-weight: 600;
-      }
-      .payment-table td {
         padding: 8px;
-        border: 1px solid #e0e0e0;
+        border-bottom: 2px solid #ddd;
       }
+      .stripe-table td {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+      }
+      .stripe-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+      .text-right { text-align: right; }
+      .text-center { text-align: center; }
+      .font-bold { font-weight: bold; }
+      .color-green { color: #389e0d; }
+      .color-red { color: #cf1322; }
 
   body
     .header(style="display: flex; justify-content: space-between; align-items: center;")
@@ -114,83 +122,112 @@ html
       .meta-info(style="text-align: right;")
         div Generated: #{moment().format(dateFormat)}
         div Booking Date: #{moment(model.bookingDate).format(dateFormat)}
+        div Booking ID: #{model._id.toString().substr(-6).toUpperCase()}
 
     .section
-      .section-header Customer Information
-      table.info-table
-        tr
-          td.label-cell Customer Name
-          td.value-cell #{model.client ? model.client.name : '-'}
-        tr
-          td.label-cell Customer ID
-          td.value-cell #{model.customerId || (model.client && model.client.customerId) || '-'}
-        tr
-          td.label-cell Phone
-          td.value-cell #{model.phone || (model.client && model.client.phone) || '-'}
-        tr
-          td.label-cell Email
-          td.value-cell #{model.email || (model.client && model.client.email) || '-'}
-        tr
-          td.label-cell Address
-          td.value-cell #{model.address || (model.client && model.client.address) || '-'}
+       .section-header Customer Information
+       table.info-table
+         tr
+           td.label-cell Customer Name
+           td.value-cell #{model.client ? model.client.name : '-'}
+         tr
+           td.label-cell Customer ID
+           td.value-cell #{model.customerId || (model.client && model.client.customerId) || '-'}
+         tr
+           td.label-cell Phone / Email
+           td.value-cell #{model.phone || '-'} / #{model.email || '-'}
+         tr
+           td.label-cell Address
+           td.value-cell #{model.address || '-'}
 
     .section
-      .section-header Villa Information
-      table.info-table
-        tr
-          td.label-cell Villa Number
-          td.value-cell #{model.villaNumber || (model.villa && model.villa.villaNumber) || '-'}
-        tr
-          td.label-cell Type / Facing
-          td.value-cell #{model.houseType || (model.villa && model.villa.houseType) || '-'} / #{model.facing || (model.villa && model.villa.facing) || '-'}
-        tr
-          td.label-cell Land Area
-          td.value-cell #{model.landArea || (model.villa && model.villa.landArea) || 0} sq.ft
-        tr
-          td.label-cell Built-up Area
-          td.value-cell #{model.builtUpArea || (model.villa && model.villa.builtUpArea) || 0} sq.ft
-    
+       .section-header Villa Details
+       table.info-table
+         tr
+           td.label-cell Villa Number
+           td.value-cell #{model.villaNumber || (model.villa && model.villa.villaNumber) || '-'}
+         tr
+           td.label-cell Type / Facing
+           td.value-cell #{model.houseType || '-'} / #{model.facing || '-'}
+         tr
+           td.label-cell Area Details
+           td.value-cell 
+             div Land: #{model.landArea} sq.ft
+             div Built-up: #{model.builtUpArea} sq.ft
+
     .section
-      .section-header Financial Details
-      table.info-table
-        tr
-          td.label-cell Total Amount
-          td.value-cell #{moneyFormatter({amount: model.totalAmount})}
-        tr
-          td.label-cell Payment Mode
-          td.value-cell 
-             span.tag.tag-blue #{model.paymentMode === 'installment' ? 'Installment' : 'Full Payment'}
-        if model.paymentMode === 'installment'
+       .section-header Financial Summary
+       table.stripe-table
+         thead
            tr
-             td.label-cell Down Payment
-             td.value-cell #{moneyFormatter({amount: model.downPayment})}
+             th Account Type
+             th.text-right Total Amount
+             th.text-right Paid Amount
+             th.text-right Pending Due
+         tbody
            tr
-             td.label-cell EMI Amount
-             td.value-cell #{moneyFormatter({amount: model.emiAmount})} (x #{model.noOfEmi} Months)
+             td.font-bold Official (White)
+             td.text-right #{moneyFormatter({amount: model.accountableAmount || model.officialAmount})}
+             td.text-right.color-green #{moneyFormatter({amount: stats.paidWhite})}
+             td.text-right.font-bold(class=stats.pendingWhite > 0 ? "color-red" : "color-green") #{moneyFormatter({amount: stats.pendingWhite})}
+           tr
+             td.font-bold Internal (Black)
+             td.text-right #{moneyFormatter({amount: model.nonAccountableAmount || model.internalAmount})}
+             td.text-right.color-green #{moneyFormatter({amount: stats.paidBlack})}
+             td.text-right.font-bold(class=stats.pendingBlack > 0 ? "color-red" : "color-green") #{moneyFormatter({amount: stats.pendingBlack})}
+           tr(style="background-color: #e6f7ff; border-top: 2px solid #91d5ff;")
+             td.font-bold TOTAL
+             td.text-right.font-bold #{moneyFormatter({amount: model.totalAmount})}
+             td.text-right.font-bold.color-green #{moneyFormatter({amount: stats.totalPaid})}
+             td.text-right.font-bold(class=stats.pendingTotal > 0 ? "color-red" : "color-green") #{moneyFormatter({amount: stats.pendingTotal})}
+
+    .section
+      .section-header Payment History
+      if payments && payments.length > 0
+        table.stripe-table
+          thead
+             tr
+               th Date
+               th Amount
+               th Mode
+               th Account
+               th Ref #
+          tbody
+             each p in payments
+               tr
+                 td #{moment(p.date).format(dateFormat)}
+                 td #{moneyFormatter({amount: p.amount})}
+                 td #{p.paymentMode}
+                 td #{p.ledger === 'internal' ? 'Internal' : 'Official'}
+                 td #{p.ref || p.transactionCode || '-'}
+      else
+        div(style="padding: 10px; color: #666; font-style: italic;") No payments recorded yet.
 
     if model.paymentPlan && model.paymentPlan.length > 0
-        .section
-          .section-header Payment Schedule
-          table.payment-table
-            thead
+      .section
+        .section-header Payment Schedule / Milestones
+        table.stripe-table
+          thead
+            tr
+              th Milestone
+              th Due Date
+              th Amount
+              th Paid
+              th Status
+          tbody
+            each plan in model.paymentPlan
               tr
-                th Name
-                th Due Date
-                th Amount
-                th Status
-            tbody
-              each plan in model.paymentPlan
-                tr
-                  td #{plan.name}
-                  td #{plan.dueDate ? moment(plan.dueDate).format(dateFormat) : '-'}
-                  td #{moneyFormatter({amount: plan.amount})}
-                  td
-                    if plan.status === 'paid'
-                        span.tag.tag-green Paid
-                    else if plan.status === 'overdue'
-                        span.tag.tag-red Overdue
-                    else
-                        span.tag.tag-blue #{plan.status}
+                td #{plan.name}
+                td #{plan.dueDate ? moment(plan.dueDate).format(dateFormat) : '-'}
+                td #{moneyFormatter({amount: plan.amount})}
+                td #{moneyFormatter({amount: plan.paidAmount || 0})}
+                td
+                  if plan.status === 'paid'
+                     span.tag.tag-green Paid
+                  else if plan.status === 'overdue'
+                     span.tag.tag-red Overdue
+                  else
+                     span.tag.tag-blue #{plan.status}
 
     .footer-section
       | This document is system generated by #{settings.company_name}.

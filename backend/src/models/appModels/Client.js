@@ -36,6 +36,17 @@ const schema = new mongoose.Schema({
   aadharCardNumber: String,
   panCardNumber: String,
   drivingLicence: String,
+  // Nominee Details
+  nomineeName: String,
+  nomineeFatherHusbandName: String,
+  nomineeRelationship: String,
+  nomineeDob: Date,
+  nomineeMobile: String,
+  nomineeAddress: String,
+
+  // GST Details
+  state: String,
+  gstin: String,
   createdBy: { type: mongoose.Schema.ObjectId, ref: 'Admin' },
   assigned: { type: mongoose.Schema.ObjectId, ref: 'Admin' },
   created: {

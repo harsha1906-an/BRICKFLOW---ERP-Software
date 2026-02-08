@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Row, Col, Statistic, Table, Button, Tabs, Spin, Typography, Space, Tag, Divider } from 'antd';
-import { ArrowLeftOutlined, PrinterOutlined, ToolOutlined, TeamOutlined, DollarOutlined, BankOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, PrinterOutlined, ToolOutlined, TeamOutlined, DollarOutlined, BankOutlined, PlusOutlined, MinusOutlined, WalletOutlined } from '@ant-design/icons';
 import { request } from '@/request';
 import useMoney from '@/settings/useMoney';
+import { API_BASE_URL } from '@/config/serverApiConfig';
 import dayjs from 'dayjs';
-import { useReactToPrint } from 'react-to-print';
+
 
 const { Title, Text } = Typography;
 
@@ -20,10 +21,7 @@ export default function VillaReportDetail() {
     const [materialTransactions, setMaterialTransactions] = useState([]);
     const [payments, setPayments] = useState([]);
 
-    const componentRef = useRef();
-    const handlePrint = useReactToPrint({
-        content: () => componentRef.current,
-    });
+
 
     useEffect(() => {
         if (id) {
@@ -97,6 +95,44 @@ export default function VillaReportDetail() {
                 total: mTotal + lTotal,
                 payments: pTotal,
                 balance: pTotal - (mTotal + lTotal)
+            });
+
+            // 5. Fetch Labour Contracts
+            const contractRes = await request.filter({
+                entity: 'labourcontract',
+                options: {
+                    filter: 'villa',
+                    equal: id
+                }
+            });
+
+            let contractTotal = 0;
+            let contractPaid = 0;
+            let contractList = [];
+
+            if (contractRes.success && contractRes.result) {
+                contractList = contractRes.result;
+                contractList.forEach(contract => {
+                    contractTotal += contract.totalAmount || 0;
+                    if (contract.milestones && Array.isArray(contract.milestones)) {
+                        contract.milestones.forEach(ms => {
+                            if (ms.isCompleted) {
+                                contractPaid += ms.netAmount || 0;
+                            }
+                        });
+                    }
+                });
+            }
+
+            setStats({
+                material: mTotal,
+                labour: lTotal,
+                total: mTotal + lTotal,
+                payments: pTotal,
+                balance: pTotal - (mTotal + lTotal),
+                contractTotal: contractTotal,
+                contractPaid: contractPaid,
+                contractRemaining: contractTotal - contractPaid
             });
 
         } catch (e) {
@@ -201,6 +237,25 @@ export default function VillaReportDetail() {
         }
     ];
 
+    const handleDownload = async () => {
+        try {
+            setLoading(true);
+            const response = await request.pdf({ entity: `villa/report/${id}` });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Villa_Report_${villa.villaNumber}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(link);
+            setLoading(false);
+        } catch (error) {
+            console.error('Download failed:', error);
+            setLoading(false);
+        }
+    };
+
     if (loading) return <div style={{ textAlign: 'center', marginTop: 100 }}><Spin size="large" /></div>;
 
     return (
@@ -212,10 +267,12 @@ export default function VillaReportDetail() {
                         {villa ? `Villa ${villa.villaNumber} Report` : 'Detailed Report'}
                     </Title>
                 </Space>
-                <Button icon={<PrinterOutlined />} onClick={handlePrint} type="primary">Print Report</Button>
+                <Space>
+                    <Button icon={<PrinterOutlined />} onClick={handleDownload} type="primary">Download Report</Button>
+                </Space>
             </div>
 
-            <div ref={componentRef} style={{ padding: 20 }}>
+            <div style={{ padding: 20 }}>
                 {/* Income Section */}
                 <Divider orientation="left" style={{ borderColor: '#3f8600', color: '#3f8600' }}>
                     <BankOutlined /> Income Overview
@@ -224,11 +281,78 @@ export default function VillaReportDetail() {
                     <Col span={8}>
                         <Card>
                             <Statistic
+                                title="Total Villa Value"
+                                value={villa?.totalAmount || 0}
+                                precision={2}
+                                valueStyle={{ color: '#1890ff' }}
+                                prefix={<DollarOutlined />}
+                                formatter={(v) => moneyFormatter({ amount: v })}
+                            />
+                        </Card>
+                    </Col>
+                    <Col span={8}>
+                        <Card>
+                            <Statistic
                                 title="Total Receipts"
                                 value={stats.payments}
                                 precision={2}
                                 valueStyle={{ color: '#3f8600' }}
                                 prefix={<PlusOutlined />}
+                                formatter={(v) => moneyFormatter({ amount: v })}
+                            />
+                        </Card>
+                    </Col>
+                    <Col span={8}>
+                        <Card>
+                            <Statistic
+                                title="Remaining Balance"
+                                value={(villa?.totalAmount || 0) - stats.payments}
+                                precision={2}
+                                valueStyle={{ color: ((villa?.totalAmount || 0) - stats.payments) > 0 ? '#cf1322' : '#3f8600' }}
+                                prefix={<WalletOutlined />}
+                                formatter={(v) => moneyFormatter({ amount: v })}
+                            />
+                        </Card>
+                    </Col>
+                </Row>
+
+                {/* Labour Contracts Section */}
+                <Divider orientation="left" style={{ borderColor: '#722ed1', color: '#722ed1' }}>
+                    <TeamOutlined /> Labour Contracts Overview
+                </Divider>
+                <Row gutter={24} style={{ marginBottom: 24 }}>
+                    <Col span={8}>
+                        <Card>
+                            <Statistic
+                                title="Total Contract Value"
+                                value={stats.contractTotal || 0}
+                                precision={2}
+                                valueStyle={{ color: '#722ed1' }}
+                                prefix={<DollarOutlined />}
+                                formatter={(v) => moneyFormatter({ amount: v })}
+                            />
+                        </Card>
+                    </Col>
+                    <Col span={8}>
+                        <Card>
+                            <Statistic
+                                title="Paid to Contractors"
+                                value={stats.contractPaid || 0}
+                                precision={2}
+                                valueStyle={{ color: '#52c41a' }}
+                                prefix={<WalletOutlined />}
+                                formatter={(v) => moneyFormatter({ amount: v })}
+                            />
+                        </Card>
+                    </Col>
+                    <Col span={8}>
+                        <Card>
+                            <Statistic
+                                title="Remaining to Pay"
+                                value={stats.contractRemaining || 0}
+                                precision={2}
+                                valueStyle={{ color: (stats.contractRemaining || 0) > 0 ? '#cf1322' : '#52c41a' }}
+                                prefix={<BankOutlined />}
                                 formatter={(v) => moneyFormatter({ amount: v })}
                             />
                         </Card>

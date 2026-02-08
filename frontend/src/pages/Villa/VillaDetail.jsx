@@ -30,8 +30,9 @@ const VillaProgressSection = ({ companyId, villaId }) => {
     setLoading(true);
     try {
       const res = await request.get({ entity: `companies/${companyId}/villas/${villaId}/progress` });
-      setProgress(res);
+      if (res) setProgress(res);
     } catch (e) {
+      console.log("Progress fetch error", e);
       setProgress(null);
     }
     setLoading(false);
@@ -170,7 +171,7 @@ const VillaDetail = () => {
           </Card>
         </Col>
         <Col span={24}>
-          <VillaProgressSection companyId={companyId} villaId={villaId} />
+          <VillaProgressSection companyId={villa?.companyId || companyId} villaId={villaId} />
         </Col>
       </Row>
     </div>

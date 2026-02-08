@@ -221,7 +221,7 @@ let routes = {
       element: <VillaUpdate />,
     },
     {
-      path: '/villa/:villaId',
+      path: '/villa/read/:villaId',
       element: <VillaDetail />,
     },
     {

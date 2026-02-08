@@ -60,8 +60,14 @@ const schema = new mongoose.Schema({
     website: {
         type: String,
     },
+    state: {
+        type: String,
+    },
+    gstin: {
+        type: String, // Explicit field for GSTIN
+    },
     taxNumber: {
-        type: String, // GST or VAT Number
+        type: String, // Legacy support
     },
     creditPeriod: {
         type: Number, // In days

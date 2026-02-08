@@ -58,6 +58,10 @@ const routerApp = (entity, controller) => {
   if (entity === 'pettycashtransaction') {
     router.route(`/${entity}/report`).get(catchErrors(controller['report']));
   }
+
+  if (entity === 'villa') {
+    router.route(`/${entity}/report/:id`).get(catchErrors(controller['downloadVillaReport']));
+  }
 };
 
 router.route('/dashboard/chart-data').get(catchErrors(chartDataController));

@@ -17,5 +17,6 @@ router.get('/supplier/:id/pdf-details', catchErrors(pdfController.downloadSuppli
 router.get('/booking/:id/pdf-details', catchErrors(pdfController.downloadBookingDetails));
 router.get('/booking/:id/pdf-receipt', catchErrors(pdfController.downloadBookingReceipt));
 router.get('/labour/pdf-list', catchErrors(pdfController.downloadLabourList));
+router.get('/expense/pdf-report/:companyId', catchErrors(pdfController.downloadExpenseReport));
 
 module.exports = router;

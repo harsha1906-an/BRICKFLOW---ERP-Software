@@ -168,16 +168,17 @@ html
             h1(style="font-size:30pt; margin:0; line-height:0.8;") 
               span(style="color:#bfa05f") #{settings.currency_symbol} 
               span(style="color:#333") B
-            div(style="font-size:8pt; font-weight:bold") BEST ENCLAVE
+            div(style="font-size:8pt; font-weight:bold") #{settings.construction_company_name || 'BEST CONSTRUCTIONS'}
         .title-section
           //- Removed duplicate company name if logo contains it, but user might want text too. 
           //- Based on image "BEST ENCLAVE" is text next to logo.
-          div.company-name BEST ENCLAVE
-          div.contact-info Cell: 99524 52139, 73391 11784
+          div.company-name #{settings.construction_company_name || 'BEST CONSTRUCTIONS'}
+          p.contact-info Cell: #{settings.company_phone || '99524 52139, 73391 11784'}
+          if settings.construction_gstin
+             p.contact-info GSTIN: #{settings.construction_gstin}
         .address-section
-          div E: bestenclave@gmail.com
-          div SF.No.287/2, Thorapalli Agraharam,
-          div Onnalvadi Main Road, HOSUR-635 109. TN
+          div E: #{settings.company_email || 'bestenclave@gmail.com'}
+          div #{settings.construction_address || 'Tamil Nadu, India'}
 
       .row
         div(style="width: 20%")

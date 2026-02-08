@@ -103,6 +103,33 @@ export default function CustomerForm({ isUpdateForm = false }) {
       >
         <Input />
       </Form.Item>
+
+      <div style={{ marginTop: '20px', marginBottom: '10px', fontWeight: 'bold' }}>Nominee Details</div>
+
+      <Form.Item name="nomineeName" label={translate('Nominee Name')}>
+        <Input />
+      </Form.Item>
+
+      <Form.Item name="nomineeFatherHusbandName" label={translate("Father's / Husband's Name")}>
+        <Input />
+      </Form.Item>
+
+      <Form.Item name="nomineeRelationship" label={translate('Relationship')}>
+        <Input />
+      </Form.Item>
+
+      <Form.Item name="nomineeDob" label={translate('Date of Birth')}>
+        {/* Using the standard Ant Design DatePicker, handled by parent form if needed */}
+        <Input type="date" style={{ width: '100%' }} />
+      </Form.Item>
+
+      <Form.Item name="nomineeMobile" label={translate('Mobile Number')}>
+        <Input />
+      </Form.Item>
+
+      <Form.Item name="nomineeAddress" label={translate('Address')}>
+        <Input.TextArea rows={2} />
+      </Form.Item>
     </>
   );
 }

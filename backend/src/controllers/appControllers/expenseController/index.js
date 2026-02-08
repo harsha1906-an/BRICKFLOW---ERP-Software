@@ -5,6 +5,35 @@ const LabourContract = require('@/models/appModels/LabourContract');
 
 const methods = createCRUDController('Expense');
 
+// Custom create method to handle number generation
+methods.create = async (req, res) => {
+    try {
+        const { companyId } = req.body; // Should be in body or req.admin
+        // Find max number
+        const lastExpense = await Expense.findOne({ companyId: req.admin.companyId || companyId }).sort({ number: -1 });
+        const number = lastExpense ? lastExpense.number + 1 : 1;
+
+        req.body.number = number;
+        req.body.companyId = req.admin.companyId || companyId;
+        req.body.removed = false;
+
+        const result = await new Expense(req.body).save();
+
+        return res.status(200).json({
+            success: true,
+            result,
+            message: 'Expense created successfully',
+        });
+    } catch (error) {
+        console.error('Error creating expense:', error);
+        return res.status(400).json({
+            success: false,
+            message: 'Error creating expense',
+            error: error.message
+        });
+    }
+};
+
 // Custom list method with filtering support
 methods.list = async (req, res) => {
     try {
@@ -35,6 +64,26 @@ methods.list = async (req, res) => {
 
         if (supplier) {
             filter.supplier = supplier;
+        }
+
+        const { supplierType } = req.query;
+        if (supplierType && supplierType !== 'all') {
+            const Supplier = require('@/models/appModels/Supplier');
+            const suppliersWithType = await Supplier.find({
+                removed: false,
+                supplierType: supplierType,
+                ...(companyId ? { companyId } : {})
+            }).distinct('_id');
+
+            if (suppliersWithType.length > 0) {
+                filter.supplier = { $in: suppliersWithType };
+            } else {
+                return res.status(200).json({
+                    success: true,
+                    result: [],
+                    pagination: { page: parseInt(page), pages: 0, total: 0 }
+                });
+            }
         }
 
         // Labour-specific filters

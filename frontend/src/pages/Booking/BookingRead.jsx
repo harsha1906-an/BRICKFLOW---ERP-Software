@@ -24,33 +24,20 @@ export default function BookingRead() {
     const [paymentModal, setPaymentModal] = useState({ open: false, milestone: null });
     const [form] = Form.useForm(); // Needed for PaymentModal
 
-    const handleDownloadReceipt = async () => {
-        try {
-            message.loading({ content: 'Generating Receipt...', key: 'pdf_download' });
-            const response = await axios.get(`${DOWNLOAD_BASE_URL}bookingreceipt/bookingreceipt-${id}.pdf`, {
-                responseType: 'blob',
-                withCredentials: true,
-            });
 
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `BookingReceipt_${id}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            message.success({ content: 'Receipt Downloaded', key: 'pdf_download' });
-        } catch (error) {
-            console.error(error);
-            message.error({ content: 'Failed to download receipt', key: 'pdf_download' });
-        }
-    };
+
+    const [payments, setPayments] = useState([]);
 
     const fetchBooking = async () => {
         setLoading(true);
         const response = await request.read({ entity: 'booking', id });
         if (response.success) {
             setBooking(response.result);
+            // Fetch payments
+            const paymentResponse = await request.list({ entity: 'payment', options: { booking: id } });
+            if (paymentResponse.success) {
+                setPayments(paymentResponse.result);
+            }
         } else {
             message.error('Failed to load booking');
             navigate('/booking');
@@ -232,22 +219,66 @@ export default function BookingRead() {
                         <Card title="Financials" bordered={false}>
                             <Statistic title="Total Amount" value={moneyFormatter({ amount: booking.totalAmount })} />
                             <Divider style={{ margin: '12px 0' }} />
-                            <Row gutter={16}>
-                                <Col span={12}>
-                                    <Statistic
-                                        title="Official (White)"
-                                        value={moneyFormatter({ amount: booking.officialAmount || 0 })}
-                                        valueStyle={{ fontSize: '14px', color: '#1890ff' }}
-                                    />
-                                </Col>
-                                <Col span={12}>
-                                    <Statistic
-                                        title="Internal (Black)"
-                                        value={moneyFormatter({ amount: booking.internalAmount || 0 })}
-                                        valueStyle={{ fontSize: '14px', color: '#f5222d' }}
-                                    />
-                                </Col>
-                            </Row>
+                            {/* Calculate Totals */}
+                            {(() => {
+                                const paidWhite = payments.filter(p => p.ledger === 'official').reduce((acc, curr) => acc + (curr.amount || 0), 0);
+                                const paidBlack = payments.filter(p => p.ledger === 'internal').reduce((acc, curr) => acc + (curr.amount || 0), 0);
+                                const pendingWhite = (booking.officialAmount || 0) - paidWhite;
+                                const pendingBlack = (booking.internalAmount || 0) - paidBlack;
+                                return (
+                                    <>
+                                        <Row gutter={16}>
+                                            <Col span={12}>
+                                                <Statistic
+                                                    title="Official (White)"
+                                                    value={moneyFormatter({ amount: booking.officialAmount || 0 })}
+                                                    valueStyle={{ fontSize: '14px', color: '#1890ff' }}
+                                                />
+                                            </Col>
+                                            <Col span={12}>
+                                                <Statistic
+                                                    title="Internal (Black)"
+                                                    value={moneyFormatter({ amount: booking.internalAmount || 0 })}
+                                                    valueStyle={{ fontSize: '14px', color: '#f5222d' }}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        <Divider style={{ margin: '12px 0' }} />
+                                        <Row gutter={16}>
+                                            <Col span={12}>
+                                                <Statistic
+                                                    title="Paid (White)"
+                                                    value={moneyFormatter({ amount: paidWhite })}
+                                                    valueStyle={{ fontSize: '14px', color: '#3f8600' }}
+                                                />
+                                            </Col>
+                                            <Col span={12}>
+                                                <Statistic
+                                                    title="Paid (Black)"
+                                                    value={moneyFormatter({ amount: paidBlack })}
+                                                    valueStyle={{ fontSize: '14px', color: '#3f8600' }}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        <Row gutter={16} style={{ marginTop: 10 }}>
+                                            <Col span={12}>
+                                                <Statistic
+                                                    title="Pending (White)"
+                                                    value={moneyFormatter({ amount: pendingWhite })}
+                                                    valueStyle={{ fontSize: '14px', color: pendingWhite > 0 ? '#cf1322' : 'green' }}
+                                                />
+                                            </Col>
+                                            <Col span={12}>
+                                                <Statistic
+                                                    title="Pending (Black)"
+                                                    value={moneyFormatter({ amount: pendingBlack })}
+                                                    valueStyle={{ fontSize: '14px', color: pendingBlack > 0 ? '#cf1322' : 'green' }}
+                                                />
+                                            </Col>
+                                        </Row>
+                                    </>
+                                );
+                            })()}
                             <Divider style={{ margin: '12px 0' }} />
                             <Statistic
                                 title="Paid Amount"
@@ -310,7 +341,9 @@ export default function BookingRead() {
                 title={translate('Booking Details')}
                 subTitle={`#${id.substr(-6)}`}
                 extra={[
-                    <Button key="receipt" icon={<FilePdfOutlined />} onClick={handleDownloadReceipt}>Download Receipt (Fix)</Button>,
+                    <Button key="pdf-details" icon={<FilePdfOutlined />} onClick={() => {
+                        window.open(`${DOWNLOAD_BASE_URL}booking/${id}/pdf-details`, '_blank');
+                    }}>Download Booking Details</Button>,
                     <Button key="edit" onClick={() => navigate(`/booking/update/${id}`)}>Edit</Button>,
                     <Button key="refresh" onClick={fetchBooking}>Refresh</Button>
                 ]}

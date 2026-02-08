@@ -275,5 +275,6 @@ module.exports = {
     filter,
     listAll,
     summary,
-    progressSummary
+    progressSummary,
+    downloadVillaReport: require('@/controllers/pdfController').downloadVillaReport
 };

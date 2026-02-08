@@ -109,6 +109,8 @@ const bookingSchema = new mongoose.Schema({
         no: Number,
         name: { type: String, required: true },
         amount: { type: Number, required: true },
+        accountableAmount: { type: Number, default: 0 },
+        nonAccountableAmount: { type: Number, default: 0 },
         dueDate: Date,
         status: {
             type: String,

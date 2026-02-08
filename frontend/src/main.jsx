@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client';
+import './config/dayjs';
 
 import RootApp from './RootApp';
 import { registerSW } from 'virtual:pwa-register';

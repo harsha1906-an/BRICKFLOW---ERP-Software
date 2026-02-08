@@ -89,7 +89,7 @@ export default function VillaList() {
         searchConfig,
         deleteModalLabels,
         // We can define custom create/read routes if needed
-        // readRoute: '/villa/read', 
+        // readRoute: '/villa',
     };
 
     return (

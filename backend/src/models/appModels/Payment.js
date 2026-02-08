@@ -53,6 +53,17 @@ const paymentSchema = new mongoose.Schema({
     enum: ['Loan', 'Card', 'Cash', 'Bank Transfer'],
     required: true,
   },
+  // Added Tax Fields
+  paymentType: {
+    type: String,
+    enum: ['Construction', 'Land', 'Other'],
+    default: 'Construction',
+  },
+  tax: { type: mongoose.Schema.Types.ObjectId, ref: 'Taxes', autopopulate: true },
+  taxRate: { type: Number, default: 0 },
+  taxAmount: { type: Number, default: 0 },
+  taxType: { type: String, enum: ['IGST', 'CGST_SGST', 'None'], default: 'None' },
+  totalAmount: { type: Number, default: 0 },
   ledger: {
     type: String,
     enum: ['official', 'internal'],

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, DatePicker, Row, Col, Statistic, Spin, message, Button, Space, Table, Tag, Divider, Modal, Progress } from 'antd';
-import { ArrowLeftOutlined, ReloadOutlined, WalletOutlined, BuildOutlined, UserOutlined, DownloadOutlined, EuroOutlined, DollarOutlined } from '@ant-design/icons';
+import { Card, DatePicker, Row, Col, Statistic, Spin, message, Button, Space, Table, Tag, Divider, Modal, Progress, Form, Input, Select, InputNumber } from 'antd';
+import { ArrowLeftOutlined, ReloadOutlined, WalletOutlined, BuildOutlined, UserOutlined, DownloadOutlined, EuroOutlined, DollarOutlined, PrinterOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { request } from '@/request';
 import { useAppContext } from '@/context/appContext';
@@ -9,6 +9,7 @@ import { useMoney } from '@/settings';
 const DailyReport = () => {
     const [messageApi, contextHolder] = message.useMessage();
     const [date, setDate] = useState(dayjs());
+    const [reportRange, setReportRange] = useState([dayjs(), dayjs()]);
     const [loading, setLoading] = useState(false);
     const [summary, setSummary] = useState(null);
     const { moneyFormatter, currency_symbol } = useMoney();
@@ -35,9 +36,7 @@ const DailyReport = () => {
     const [downloading, setDownloading] = useState(false);
     const [progress, setProgress] = useState(0);
 
-    const handleDownload = async () => {
-        if (!summary) return;
-
+    const handleDownloadDaily = async () => {
         setDownloading(true);
         setProgress(0);
 
@@ -55,6 +54,8 @@ const DailyReport = () => {
 
         try {
             const dateStr = date.format('YYYY-MM-DD');
+
+            // Use the single date endpoint
             const response = await request.pdf({
                 entity: `companies/${companyId}/daily-report-pdf?date=${dateStr}`,
             });
@@ -88,6 +89,97 @@ const DailyReport = () => {
         }
     };
 
+    const handleDownloadRange = async () => {
+        if (!reportRange || reportRange.length !== 2) {
+            messageApi.warning('Please select a date range');
+            return;
+        }
+
+        setDownloading(true);
+        setProgress(0);
+
+        // Fake progress up to 99%
+        const timer = setInterval(() => {
+            setProgress((prev) => {
+                if (prev >= 99) {
+                    clearInterval(timer);
+                    return 99;
+                }
+                const increment = prev < 60 ? 10 : prev < 90 ? 5 : 1;
+                return prev + increment;
+            });
+        }, 100);
+
+        try {
+            const startDate = reportRange[0].format('YYYY-MM-DD');
+            const endDate = reportRange[1].format('YYYY-MM-DD');
+
+            // Use the date range endpoint
+            const response = await request.pdf({
+                entity: `companies/${companyId}/daily-report-pdf?startDate=${startDate}&endDate=${endDate}`,
+            });
+
+            // Download complete
+            clearInterval(timer);
+            setProgress(100);
+
+            // Handle direct blob response headers
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `DailyReport_${startDate}_to_${endDate}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            // Close modal after short delay
+            setTimeout(() => {
+                setDownloading(false);
+                setProgress(0);
+            }, 1000);
+
+        } catch (error) {
+            console.error('Download failed:', error);
+            clearInterval(timer);
+            setDownloading(false);
+            messageApi.error('Failed to download PDF report');
+        }
+    };
+
+    // Expense Modal Logic
+    const [expenseModalOpen, setExpenseModalOpen] = useState(false);
+    const [expenseForm] = Form.useForm();
+    const handleAddExpense = () => {
+        setExpenseModalOpen(true);
+        expenseForm.resetFields();
+        expenseForm.setFieldsValue({
+            date: date,
+            paymentMode: 'Cash'
+        });
+    };
+
+    const handleExpenseSubmit = async () => {
+        try {
+            const values = await expenseForm.validateFields();
+            const payload = {
+                ...values,
+                recipientType: 'Other', // General Expense
+                date: values.date.format('YYYY-MM-DD'),
+                companyId,
+            };
+
+            await request.create({ entity: 'expense', jsonData: payload });
+            messageApi.success('Expense added successfully');
+            setExpenseModalOpen(false);
+            fetchSummary(); // Refresh report
+        } catch (e) {
+            console.error(e);
+            messageApi.error('Failed to add expense');
+        }
+    };
+
     return (
         <Card>
             {contextHolder}
@@ -97,9 +189,22 @@ const DailyReport = () => {
                         <h2 style={{ margin: 0 }}>Daily Summary</h2>
                     </Space>
                     <Space>
-                        <DatePicker value={date} onChange={setDate} allowClear={false} />
+                        <span style={{ fontSize: '12px', color: '#666' }}>View:</span>
+                        <DatePicker value={date} onChange={setDate} allowClear={false} style={{ width: 120 }} />
                         <Button icon={<ReloadOutlined />} onClick={fetchSummary} loading={loading} />
-                        <Button icon={<DownloadOutlined />} onClick={handleDownload} disabled={!summary}>Download</Button>
+                        <Button type="primary" onClick={handleAddExpense}>Add Expense</Button>
+                        <Button icon={<PrinterOutlined />} onClick={handleDownloadDaily} disabled={!summary} title="Download Daily Report" />
+                    </Space>
+                    <Space>
+                        <span style={{ fontSize: '12px', color: '#666' }}>Download Report:</span>
+                        <DatePicker.RangePicker
+                            value={reportRange}
+                            onChange={setReportRange}
+                            format="DD/MM/YYYY"
+                            allowClear={false}
+                            style={{ width: 240 }}
+                        />
+                        <Button icon={<DownloadOutlined />} onClick={handleDownloadRange}>PDF</Button>
                     </Space>
                 </div>
 
@@ -199,6 +304,52 @@ const DailyReport = () => {
                     </>
                 ) : null}
             </Space>
+
+            {/* Add Expense Modal */}
+            <Modal
+                title="Add General Expense"
+                open={expenseModalOpen}
+                onOk={handleExpenseSubmit}
+                onCancel={() => setExpenseModalOpen(false)}
+            >
+                <Form form={expenseForm} layout="vertical">
+                    <Form.Item name="date" label="Date" rules={[{ required: true }]}>
+                        <DatePicker style={{ width: '100%' }} />
+                    </Form.Item>
+                    <Form.Item name="otherRecipient" label="Payee Name (e.g. JCB Service)" rules={[{ required: true, message: 'Please enter payee name' }]}>
+                        <Input placeholder="Enter name of person/service" />
+                    </Form.Item>
+                    <Form.Item name="amount" label="Amount" rules={[{ required: true }]}>
+                        <InputNumber style={{ width: '100%' }} min={0} />
+                    </Form.Item>
+                    <Form.Item name="description" label="Description">
+                        <Input.TextArea rows={2} />
+                    </Form.Item>
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item name="reference" label="Ref Number">
+                                <Input placeholder="Invoice/Bill No" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item name="transactionCode" label="Transaction No">
+                                <Input placeholder="UPI/Cheque No" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Form.Item name="paymentMode" label="Payment Mode" rules={[{ required: true }]}>
+                        <Select options={[
+                            { value: 'Cash', label: 'Cash' },
+                            { value: 'Bank Transfer', label: 'Bank Transfer' },
+                            { value: 'UPI', label: 'UPI' },
+                            { value: 'Cheque', label: 'Cheque' },
+                            { value: 'Card', label: 'Card' },
+                        ]} />
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            {/* Download Modal */}
             <Modal
                 title="Generating Report"
                 open={downloading}

@@ -31,66 +31,81 @@ html
       .sig-box { text-align: center; width: 200px; border-top: 1px solid #000; padding-top: 10px; }
       
   body
-    .top-area
-      if logo
-        img.logo(src=logo)
-      else
-        div(style="width: 120px; height: 50px; background: #eee; text-align: center; line-height: 50px;") LOGO
-      h1.report-title Petty Cash Report
+    - const reports = Array.isArray(model) ? model : [model]
+    
+    each report, i in reports
+      .page-container(style= "position: relative; min-height: 95vh; display: flex; flex-direction: column;" + (i < reports.length - 1 ? " page-break-after: always;" : ""))
+        .top-area
+          if logo
+            img.logo(src=logo)
+          else
+            div(style="width: 120px; height: 50px; background: #eee; text-align: center; line-height: 50px;") LOGO
+          h1.report-title Petty Cash Book
+    
+        .info-section
+          .info-box
+            .info-row
+              .info-label Date
+              .info-value #{moment(report.date).format(dateFormat)}
+            .info-row
+              .info-label Manager
+              .info-value #{report.manager || 'Manoja Kumar'}
+            .info-row
+                .info-label Opening Balance
+                .info-value #{moneyFormatter({amount: report.openingBalance})}
+          .info-box
+            .info-row
+              .info-label Total In (Cum.)
+              .info-value #{moneyFormatter({amount: report.totalCashReceived})}
+            .info-row
+              .info-label Total Out (Cum.)
+              .info-value #{moneyFormatter({amount: report.totalExpenses})}
+            .info-row
+              .info-label Closing Balance
+              .info-value #{moneyFormatter({amount: report.currentBalance})}
 
-    .info-section
-      .info-box
-        .info-row
-          .info-label Date
-          .info-value #{moment(model.date).format(dateFormat)}
-        .info-row
-          .info-label Manager
-          .info-value #{model.manager || 'Manoja Kumar'}
-      .info-box
-        .info-row
-          .info-label Cash Received
-          .info-value #{moneyFormatter({amount: model.totalCashReceived})}
-        .info-row
-          .info-label Total Expenses
-          .info-value #{moneyFormatter({amount: model.totalExpenses})}
-        .info-row
-          .info-label Current Balance
-          .info-value #{moneyFormatter({amount: model.currentBalance})}
-
-    main
-      table.table-report
-        thead
-          tr
-            th(style="width: 12%") Date
-            th(style="width: 23%") Description
-            th(style="width: 15%") Type
-            th(style="width: 15%") Amount
-            th(style="width: 15%") Receipt #
-            th(style="width: 20%") Notes
-        tbody
-          each item in model.items
-            tr
-              td #{moment(item.date).format(dateFormat)}
-              td #{item.name}
-              td #{item.type === 'inward' ? 'Top-up' : 'Expense'}
-              td(style="color: " + (item.type === 'inward' ? '#008000' : '#d32f2f'))
-                | #{item.type === 'inward' ? '+' : '-'} #{moneyFormatter({amount: item.amount})}
-              td #{item.receiptNumber || '-'}
-              td #{item.note || '-'}
-          
-          // Fill empty rows to maintain A4 look
-          - var emptyRows = 15 - model.items.length
-          if emptyRows > 0
-            - for (var x = 0; x < emptyRows; x++)
+        div(style="flex: 1;")
+          table.table-report
+            thead
               tr
-                td
-                td
-                td
-                td
-                td
+                th(style="width: 12%") Date
+                th(style="width: 23%") Description
+                th(style="width: 10%") Type
+                th(style="width: 15%") Amount
+                th(style="width: 15%") Run. Bal.
+                th(style="width: 10%") Receipt #
+                th(style="width: 15%") Notes
+            tbody
+              if report.items && report.items.length > 0
+                  each item in report.items
+                    tr
+                      td #{moment(item.date).format(dateFormat)}
+                      td #{item.name}
+                      td #{item.type === 'inward' ? 'Top-up' : 'Expense'}
+                      td(style="color: " + (item.type === 'inward' ? '#008000' : '#d32f2f'))
+                        | #{item.type === 'inward' ? '+' : '-'} #{moneyFormatter({amount: item.amount})}
+                      td(style="font-weight:bold") #{moneyFormatter({amount: item.runningBalance})}
+                      td #{item.receiptNumber || '-'}
+                      td #{item.note || '-'}
+              else
+                  tr
+                      td(colspan="7", style="text-align:center; padding: 20px; color: #777;") No transactions for this day.
+              
+              // Fill empty rows to maintain A4 look (optional, but good for structure if short)
+              - var emptyRows = Math.max(0, 10 - (report.items ? report.items.length : 0))
+              if emptyRows > 0
+                - for (var x = 0; x < emptyRows; x++)
+                  tr
+                    td(style="height:30px")
+                    td
+                    td
+                    td
+                    td
+                    td
+                    td
 
-    .signature-section
-      .sig-box 
-        strong Prepared By
-      .sig-box 
-        strong Authorized Signature
+        .signature-section(style="margin-top: auto;")
+          .sig-box 
+            strong Prepared By
+          .sig-box 
+            strong Authorized Signature
